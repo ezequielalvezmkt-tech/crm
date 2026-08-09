@@ -824,7 +824,30 @@ function todayISO(){
   return new Date().toISOString().slice(0,10);
 }
 
-/* ---------- login ---------- */
+/* ---------- login persistente (localStorage), igual que en LPE Analytics ---------- */
+const CREDS_KEY = 'crm_lpe_creds';
+
+async function tryAutoLogin(){
+  const raw = localStorage.getItem(CREDS_KEY);
+  if(!raw) return;
+  let creds;
+  try{ creds = JSON.parse(raw); } catch(e){ localStorage.removeItem(CREDS_KEY); return; }
+  try{
+    const r = await apiPost({ action:'login', usuario:creds.usuario, password:creds.password });
+    if(r.ok){
+      SESSION = { usuario: r.usuario, rol: r.rol };
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('who-name').textContent = SESSION.usuario;
+      await refreshAll();
+    } else {
+      localStorage.removeItem(CREDS_KEY);
+    }
+  }catch(e){
+    // sin conexión momentánea: no borramos las credenciales, se reintenta la próxima carga
+  }
+}
+
 async function login(){
   const usuario = document.getElementById('login-user').value.trim();
   const password = document.getElementById('login-pass').value;
@@ -843,6 +866,7 @@ async function login(){
       return;
     }
     SESSION = { usuario: r.usuario, rol: r.rol };
+    localStorage.setItem(CREDS_KEY, JSON.stringify({ usuario, password }));
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('who-name').textContent = SESSION.usuario;
@@ -854,10 +878,13 @@ async function login(){
 }
 function logout(){
   SESSION = null;
+  localStorage.removeItem(CREDS_KEY);
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-pass').value = '';
 }
+
+tryAutoLogin();
 
 /* ---------- tabs ---------- */
 function showView(name){
