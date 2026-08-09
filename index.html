@@ -74,7 +74,7 @@
     color:var(--ink-soft);
     margin-bottom:5px;
   }
-  input{
+  input, textarea{
     width:100%;
     padding:10px 12px;
     border:1px solid var(--line);
@@ -84,7 +84,8 @@
     font-size:0.95rem;
     color:var(--ink);
   }
-  input:focus{outline:2px solid var(--green); outline-offset:0;}
+  textarea{resize:vertical; min-height:64px;}
+  input:focus, textarea:focus, select:focus{outline:2px solid var(--green); outline-offset:0;}
   button{
     cursor:pointer;
     font-family:'Inter',sans-serif;
@@ -169,8 +170,16 @@
     margin:0 0 4px;
   }
   .panel-sub{color:var(--ink-soft); font-size:0.85rem; margin:0 0 20px;}
+  .section-label{
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    margin:28px 0 10px;
+    font-weight:600;
+  }
 
-  /* ---------- STOCK TABLE ---------- */
+  /* ---------- LEDGER TABLE ---------- */
   table.ledger{
     width:100%;
     border-collapse:collapse;
@@ -209,6 +218,7 @@
   .row-actions button.del{color:var(--rust);}
 
   .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; flex-wrap:wrap;}
+  .toolbar .btns{display:flex; gap:10px; flex-wrap:wrap;}
   .btn-secondary{
     background:var(--ink);
     color:var(--paper);
@@ -217,8 +227,13 @@
     font-size:0.82rem;
     font-weight:600;
   }
+  .btn-secondary.outline{
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--ink) !important;
+  }
 
-  /* ---------- FORM CARD (modal-ish inline) ---------- */
+  /* ---------- FORM CARD ---------- */
   .form-card{
     background:var(--panel);
     border:1px solid var(--line);
@@ -227,13 +242,20 @@
     display:none;
   }
   .form-card.show{display:block;}
+  .form-card h3{
+    font-family:'Fraunces',serif;
+    font-size:1rem;
+    margin:0 0 14px;
+  }
   .form-grid{
     display:grid;
     grid-template-columns:2fr 1fr 1fr 1fr;
     gap:12px;
     align-items:end;
   }
-  @media(max-width:700px){.form-grid{grid-template-columns:1fr 1fr;}}
+  .form-grid.g5{grid-template-columns:1.4fr 1.2fr 0.8fr 0.9fr 0.9fr;}
+  .form-grid.g2{grid-template-columns:1fr 1fr;}
+  @media(max-width:700px){.form-grid, .form-grid.g5, .form-grid.g2{grid-template-columns:1fr 1fr;}}
   .form-actions{margin-top:14px; display:flex; gap:10px;}
   .btn-ghost{
     background:transparent;
@@ -243,10 +265,13 @@
     border-radius:2px;
     font-size:0.82rem;
   }
+  .toggle-row{display:flex; align-items:center; gap:8px; margin-bottom:14px; font-size:0.85rem;}
+  .toggle-row input{width:auto;}
+  .hint{font-size:0.76rem; color:var(--ink-soft); margin-top:-8px; margin-bottom:14px;}
 
   /* ---------- VENTA ---------- */
   .venta-card{
-    max-width:480px;
+    max-width:520px;
     background:var(--panel);
     border:1px solid var(--line);
     padding:24px;
@@ -272,6 +297,19 @@
   #venta-msg{margin-top:14px; font-size:0.85rem; display:none; padding:10px 12px; border-radius:2px;}
   #venta-msg.ok{background:var(--green-soft); color:var(--green); display:block;}
   #venta-msg.err{background:var(--rust-soft); color:var(--rust); display:block;}
+  #compra-msg{margin-top:14px; font-size:0.85rem; display:none; padding:10px 12px; border-radius:2px;}
+  #compra-msg.ok{background:var(--green-soft); color:var(--green); display:block;}
+  #compra-msg.err{background:var(--rust-soft); color:var(--rust); display:block;}
+  #cliente-msg{margin-top:14px; font-size:0.85rem; display:none; padding:10px 12px; border-radius:2px;}
+  #cliente-msg.ok{background:var(--green-soft); color:var(--green); display:block;}
+  #cliente-msg.err{background:var(--rust-soft); color:var(--rust); display:block;}
+  .cliente-box{
+    border:1px solid var(--line);
+    background:var(--paper);
+    padding:14px;
+    margin-bottom:16px;
+  }
+  .cliente-box .field:last-child{margin-bottom:0;}
 
   /* ---------- DASHBOARD ---------- */
   .receipt{
@@ -317,6 +355,39 @@
   .stat .v{font-family:'IBM Plex Mono',monospace; font-size:1.3rem; font-weight:600; margin-top:2px;}
   .stat.green .v{color:var(--green);}
 
+  /* ---------- CLIENTES ---------- */
+  .rank{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:20px; height:20px;
+    background:var(--gold);
+    color:#fff;
+    font-size:0.7rem;
+    font-weight:700;
+    border-radius:50%;
+    margin-right:6px;
+  }
+  .seg-panel{
+    display:none;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-top:none;
+  }
+  .seg-panel.show{display:table-row;}
+  .seg-panel td{padding:16px 20px;}
+  .seg-list{margin-bottom:14px;}
+  .seg-item{
+    padding:8px 0;
+    border-bottom:1px solid var(--line);
+    font-size:0.83rem;
+  }
+  .seg-item:last-child{border-bottom:none;}
+  .seg-item .meta{color:var(--ink-soft); font-size:0.72rem; margin-top:2px;}
+  .seg-empty{color:var(--ink-soft); font-size:0.82rem; padding:6px 0;}
+  .seg-add{display:flex; gap:10px; align-items:flex-end;}
+  .seg-add textarea{flex:1;}
+
   /* Historial */
   .empty{color:var(--ink-soft); font-size:0.85rem; padding:20px 0;}
 </style>
@@ -351,6 +422,7 @@
   <nav class="tabs">
     <button data-view="stock" class="active" onclick="showView('stock')">Stock</button>
     <button data-view="venta" onclick="showView('venta')">Registrar venta</button>
+    <button data-view="clientes" onclick="showView('clientes')">Clientes</button>
     <button data-view="historial" onclick="showView('historial')">Historial de ventas</button>
     <button data-view="dashboard" onclick="showView('dashboard')">Dashboard</button>
   </nav>
@@ -364,10 +436,14 @@
           <div class="panel-title">Stock</div>
           <div class="panel-sub">Costo, precio de venta y unidades disponibles por título</div>
         </div>
-        <button class="btn-secondary" onclick="openForm()">+ Nuevo título</button>
+        <div class="btns">
+          <button class="btn-secondary outline" onclick="openCompraForm()">+ Agregar mercadería</button>
+          <button class="btn-secondary" onclick="openForm()">+ Nuevo título</button>
+        </div>
       </div>
 
       <div class="form-card" id="form-card">
+        <h3>Nuevo título / editar título</h3>
         <div class="form-grid">
           <div class="field"><label>Título</label><input id="f-titulo"></div>
           <div class="field"><label>Precio costo</label><input id="f-costo" type="number" step="0.01"></div>
@@ -378,6 +454,39 @@
           <button class="btn-secondary" onclick="saveProducto()">Guardar</button>
           <button class="btn-ghost" onclick="closeForm()">Cancelar</button>
         </div>
+      </div>
+
+      <div class="form-card" id="compra-form">
+        <h3>Agregar mercadería (ingreso de stock)</h3>
+        <div class="toggle-row">
+          <input type="checkbox" id="c-nuevo-toggle" onchange="toggleCompraNuevo()">
+          <label for="c-nuevo-toggle" style="margin:0;">Es un título nuevo (todavía no está en el stock)</label>
+        </div>
+
+        <div id="c-existente-wrap" class="field">
+          <label>Título</label>
+          <select id="c-producto"></select>
+        </div>
+        <div id="c-nuevo-wrap" style="display:none;">
+          <div class="form-grid g2">
+            <div class="field"><label>Título nuevo</label><input id="c-titulo-nuevo"></div>
+            <div class="field"><label>Precio de venta</label><input id="c-venta-nuevo" type="number" step="0.01"></div>
+          </div>
+        </div>
+
+        <div class="form-grid g5">
+          <div class="field"><label>Proveedor</label><input id="c-proveedor" placeholder="Nombre del proveedor"></div>
+          <div class="field"><label>Fecha</label><input id="c-fecha" type="date"></div>
+          <div class="field"><label>Cantidad</label><input id="c-cantidad" type="number" min="1" oninput="updateCompraTotal()"></div>
+          <div class="field"><label>Costo unitario</label><input id="c-costo" type="number" step="0.01" oninput="updateCompraTotal()"></div>
+          <div class="field"><label>Total</label><input id="c-total" type="text" readonly class="mono"></div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="registrarCompra()">Registrar ingreso</button>
+          <button class="btn-ghost" onclick="closeCompraForm()">Cancelar</button>
+        </div>
+        <div id="compra-msg"></div>
       </div>
 
       <table class="ledger">
@@ -393,14 +502,47 @@
         </thead>
         <tbody id="stock-body"></tbody>
       </table>
+
+      <div class="section-label">Historial de mercadería ingresada</div>
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Proveedor</th>
+            <th>Título</th>
+            <th class="num">Cant.</th>
+            <th class="num">Costo u.</th>
+            <th class="num">Total</th>
+            <th>Usuario</th>
+          </tr>
+        </thead>
+        <tbody id="compras-body"></tbody>
+      </table>
+      <div id="compras-empty" class="empty" style="display:none;">Todavía no cargaste ingresos de mercadería.</div>
     </section>
 
     <!-- ---------- REGISTRAR VENTA ---------- -->
     <section id="view-venta" class="view">
       <div class="panel-title">Registrar venta</div>
-      <div class="panel-sub">Descuenta el stock automáticamente y calcula la ganancia</div>
+      <div class="panel-sub">Descuenta el stock automáticamente, calcula la ganancia y queda ligada al cliente</div>
 
       <div class="venta-card">
+
+        <div class="cliente-box">
+          <div class="field">
+            <label>Cliente</label>
+            <select id="v-cliente" onchange="toggleClienteNuevo()"></select>
+          </div>
+          <div id="v-cliente-nuevo-wrap" style="display:none;">
+            <div class="form-grid g2">
+              <div class="field"><label>Nombre</label><input id="v-cliente-nombre"></div>
+              <div class="field"><label>Teléfono</label><input id="v-cliente-telefono"></div>
+              <div class="field"><label>Email</label><input id="v-cliente-email"></div>
+              <div class="field"><label>Localidad</label><input id="v-cliente-localidad"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="field">
           <label>Título</label>
           <select id="v-producto" onchange="updateVentaPreview()"></select>
@@ -422,6 +564,47 @@
       </div>
     </section>
 
+    <!-- ---------- CLIENTES ---------- -->
+    <section id="view-clientes" class="view">
+      <div class="toolbar">
+        <div>
+          <div class="panel-title">Clientes</div>
+          <div class="panel-sub">Ordenados por frecuencia de compra · seguimiento por cliente</div>
+        </div>
+        <button class="btn-secondary" onclick="openClienteForm()">+ Nuevo cliente</button>
+      </div>
+
+      <div class="form-card" id="cliente-form">
+        <h3>Nuevo cliente</h3>
+        <div class="form-grid g2">
+          <div class="field"><label>Nombre</label><input id="cl-nombre"></div>
+          <div class="field"><label>Teléfono</label><input id="cl-telefono"></div>
+          <div class="field"><label>Email</label><input id="cl-email"></div>
+          <div class="field"><label>Localidad</label><input id="cl-localidad"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="saveCliente()">Guardar</button>
+          <button class="btn-ghost" onclick="closeClienteForm()">Cancelar</button>
+        </div>
+        <div id="cliente-msg"></div>
+      </div>
+
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Contacto</th>
+            <th class="num">Compras</th>
+            <th class="num">Total gastado</th>
+            <th>Última compra</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="clientes-body"></tbody>
+      </table>
+      <div id="clientes-empty" class="empty" style="display:none;">Todavía no cargaste clientes.</div>
+    </section>
+
     <!-- ---------- HISTORIAL ---------- -->
     <section id="view-historial" class="view">
       <div class="panel-title">Historial de ventas</div>
@@ -434,6 +617,7 @@
             <th class="num">Cant.</th>
             <th class="num">Total</th>
             <th class="num">Ganancia</th>
+            <th>Cliente</th>
             <th>Usuario</th>
           </tr>
         </thead>
@@ -482,17 +666,19 @@
 
 <script>
 /* ======================================================
-   CONFIGURACIÓN: pegá acá la URL de tu Web App de Apps Script
-   (ver README.md — paso "Deploy")
+   CONFIGURACIÓN de la API (Google Apps Script)
    ====================================================== */
-const API_URL = "https://script.google.com/macros/s/AKfycbyOAdAf3Kwz_2qKdQ_XWS53nHu4xB42EnYvSkMxL6fOFvRzlBLNw2lrRP-Vv2p8nrERKw/exec"
+const API_URL = "https://script.google.com/macros/s/AKfycbyOAdAf3Kwz_2qKdQ_XWS53nHu4xB42EnYvSkMxL6fOFvRzlBLNw2lrRP-Vv2p8nrERKw/exec";
 
 let SESSION = null; // { usuario, rol } — se pierde al recargar, hay que loguearse de nuevo
 let STOCK_CACHE = [];
+let CLIENTES_CACHE = [];
 
 /* ---------- helpers de red ---------- */
-async function apiGet(action){
-  const res = await fetch(`${API_URL}?action=${action}`);
+async function apiGet(action, extra){
+  let url = `${API_URL}?action=${action}`;
+  if(extra) url += '&' + extra;
+  const res = await fetch(url);
   return res.json();
 }
 async function apiPost(payload){
@@ -506,6 +692,13 @@ async function apiPost(payload){
 }
 function money(n){
   return '$' + (Number(n)||0).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtDate(d){
+  if(!d) return '—';
+  return new Date(d).toLocaleDateString('es-AR');
+}
+function todayISO(){
+  return new Date().toISOString().slice(0,10);
 }
 
 /* ---------- login ---------- */
@@ -549,14 +742,16 @@ function showView(name){
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   document.querySelector(`nav.tabs button[data-view="${name}"]`).classList.add('active');
-  if(name==='stock') loadStock();
+  if(name==='stock'){ loadStock(); loadCompras(); }
   if(name==='venta') loadVentaForm();
+  if(name==='clientes') loadClientes();
   if(name==='historial') loadHistorial();
   if(name==='dashboard') loadDashboard();
 }
 
 async function refreshAll(){
   await loadStock();
+  await loadCompras();
 }
 
 /* ---------- STOCK ---------- */
@@ -619,12 +814,112 @@ async function deleteProducto(id){
   loadStock();
 }
 
+/* ---------- AGREGAR MERCADERÍA (compras) ---------- */
+function openCompraForm(){
+  const card = document.getElementById('compra-form');
+  card.classList.add('show');
+  document.getElementById('c-nuevo-toggle').checked = false;
+  toggleCompraNuevo();
+  const sel = document.getElementById('c-producto');
+  sel.innerHTML = STOCK_CACHE.map(p=>`<option value="${p.id}">${p.titulo} (stock: ${p.stock})</option>`).join('');
+  document.getElementById('c-titulo-nuevo').value = '';
+  document.getElementById('c-venta-nuevo').value = '';
+  document.getElementById('c-proveedor').value = '';
+  document.getElementById('c-fecha').value = todayISO();
+  document.getElementById('c-cantidad').value = '';
+  document.getElementById('c-costo').value = '';
+  document.getElementById('c-total').value = '';
+  document.getElementById('compra-msg').style.display = 'none';
+}
+function closeCompraForm(){
+  document.getElementById('compra-form').classList.remove('show');
+}
+function toggleCompraNuevo(){
+  const esNuevo = document.getElementById('c-nuevo-toggle').checked;
+  document.getElementById('c-existente-wrap').style.display = esNuevo ? 'none' : 'block';
+  document.getElementById('c-nuevo-wrap').style.display = esNuevo ? 'block' : 'none';
+}
+function updateCompraTotal(){
+  const cant = Number(document.getElementById('c-cantidad').value) || 0;
+  const costo = Number(document.getElementById('c-costo').value) || 0;
+  document.getElementById('c-total').value = money(cant*costo);
+}
+async function registrarCompra(){
+  const esNuevo = document.getElementById('c-nuevo-toggle').checked;
+  const msg = document.getElementById('compra-msg');
+  msg.className=''; msg.style.display='none';
+
+  const payload = {
+    action:'registrarCompra',
+    proveedor: document.getElementById('c-proveedor').value.trim(),
+    fecha: document.getElementById('c-fecha').value,
+    cantidad: document.getElementById('c-cantidad').value,
+    precioCosto: document.getElementById('c-costo').value,
+    usuario: SESSION.usuario
+  };
+  if(esNuevo){
+    payload.titulo = document.getElementById('c-titulo-nuevo').value.trim();
+    payload.precioVenta = document.getElementById('c-venta-nuevo').value;
+    if(!payload.titulo){ msg.className='err'; msg.textContent='Falta el título del producto nuevo.'; return; }
+  } else {
+    payload.productoId = document.getElementById('c-producto').value;
+    if(!payload.productoId){ msg.className='err'; msg.textContent='Elegí un título.'; return; }
+  }
+  if(!payload.cantidad || Number(payload.cantidad)<=0){ msg.className='err'; msg.textContent='Cantidad inválida.'; return; }
+
+  const r = await apiPost(payload);
+  if(!r.ok){ msg.className='err'; msg.textContent=r.error; return; }
+  msg.className='ok';
+  msg.textContent='Mercadería registrada y stock actualizado.';
+  await loadStock();
+  await loadCompras();
+  setTimeout(closeCompraForm, 900);
+}
+async function loadCompras(){
+  const r = await apiGet('compras');
+  if(!r.ok) return;
+  const body = document.getElementById('compras-body');
+  const empty = document.getElementById('compras-empty');
+  body.innerHTML = '';
+  if(r.data.length===0){ empty.style.display='block'; return; }
+  empty.style.display='none';
+  r.data.forEach(c=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${fmtDate(c.fecha)}</td>
+      <td>${c.proveedor||'—'}</td>
+      <td>${c.titulo}</td>
+      <td class="num mono">${c.cantidad}</td>
+      <td class="num mono">${money(c.precioCostoUnit)}</td>
+      <td class="num mono">${money(c.total)}</td>
+      <td>${c.usuario||''}</td>`;
+    body.appendChild(tr);
+  });
+}
+
 /* ---------- VENTA ---------- */
 async function loadVentaForm(){
   if(STOCK_CACHE.length === 0) await loadStock();
+  if(CLIENTES_CACHE.length === 0) await loadClientesCache();
   const sel = document.getElementById('v-producto');
   sel.innerHTML = STOCK_CACHE.map(p=>`<option value="${p.id}">${p.titulo} (stock: ${p.stock})</option>`).join('');
+
+  const clienteSel = document.getElementById('v-cliente');
+  clienteSel.innerHTML =
+    '<option value="">— Sin cliente registrado —</option>' +
+    '<option value="__nuevo__">+ Cliente nuevo</option>' +
+    CLIENTES_CACHE.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+  document.getElementById('v-cliente-nuevo-wrap').style.display = 'none';
+
   updateVentaPreview();
+}
+async function loadClientesCache(){
+  const r = await apiGet('clientes');
+  if(r.ok) CLIENTES_CACHE = r.data;
+}
+function toggleClienteNuevo(){
+  const val = document.getElementById('v-cliente').value;
+  document.getElementById('v-cliente-nuevo-wrap').style.display = (val==='__nuevo__') ? 'block' : 'none';
 }
 function updateVentaPreview(){
   const id = document.getElementById('v-producto').value;
@@ -646,7 +941,32 @@ async function registrarVenta(){
   if(!id || !cantidad || cantidad<=0){
     msg.className='err'; msg.textContent='Elegí un título y una cantidad válida.'; return;
   }
-  const r = await apiPost({ action:'registrarVenta', id, cantidad, usuario: SESSION.usuario });
+
+  let clienteId = document.getElementById('v-cliente').value;
+  let clienteNombre = '';
+
+  if(clienteId === '__nuevo__'){
+    const nombre = document.getElementById('v-cliente-nombre').value.trim();
+    if(!nombre){ msg.className='err'; msg.textContent='Ingresá el nombre del cliente nuevo.'; return; }
+    const rc = await apiPost({
+      action:'addCliente',
+      nombre,
+      telefono: document.getElementById('v-cliente-telefono').value.trim(),
+      email: document.getElementById('v-cliente-email').value.trim(),
+      localidad: document.getElementById('v-cliente-localidad').value.trim()
+    });
+    if(!rc.ok){ msg.className='err'; msg.textContent=rc.error; return; }
+    clienteId = rc.id;
+    clienteNombre = nombre;
+    CLIENTES_CACHE = []; // fuerza recarga la próxima vez
+  } else if(clienteId){
+    const c = CLIENTES_CACHE.find(x=>x.id===clienteId);
+    clienteNombre = c ? c.nombre : '';
+  } else {
+    clienteId = '';
+  }
+
+  const r = await apiPost({ action:'registrarVenta', id, cantidad, usuario: SESSION.usuario, clienteId, clienteNombre });
   if(!r.ok){
     msg.className='err'; msg.textContent = r.error;
     return;
@@ -654,8 +974,106 @@ async function registrarVenta(){
   msg.className='ok';
   msg.textContent = `Venta registrada — total ${money(r.totalVenta)}, ganancia ${money(r.ganancia)}. Stock restante: ${r.stockRestante}.`;
   document.getElementById('v-cantidad').value = 1;
+  document.getElementById('v-cliente-nombre').value = '';
+  document.getElementById('v-cliente-telefono').value = '';
+  document.getElementById('v-cliente-email').value = '';
+  document.getElementById('v-cliente-localidad').value = '';
   await loadStock();
   await loadVentaForm();
+}
+
+/* ---------- CLIENTES ---------- */
+function openClienteForm(){
+  document.getElementById('cliente-form').classList.add('show');
+  document.getElementById('cl-nombre').value='';
+  document.getElementById('cl-telefono').value='';
+  document.getElementById('cl-email').value='';
+  document.getElementById('cl-localidad').value='';
+  document.getElementById('cliente-msg').style.display='none';
+}
+function closeClienteForm(){
+  document.getElementById('cliente-form').classList.remove('show');
+}
+async function saveCliente(){
+  const msg = document.getElementById('cliente-msg');
+  msg.className=''; msg.style.display='none';
+  const nombre = document.getElementById('cl-nombre').value.trim();
+  if(!nombre){ msg.className='err'; msg.textContent='Falta el nombre.'; return; }
+  const r = await apiPost({
+    action:'addCliente',
+    nombre,
+    telefono: document.getElementById('cl-telefono').value.trim(),
+    email: document.getElementById('cl-email').value.trim(),
+    localidad: document.getElementById('cl-localidad').value.trim()
+  });
+  if(!r.ok){ msg.className='err'; msg.textContent=r.error; return; }
+  msg.className='ok'; msg.textContent='Cliente guardado.';
+  await loadClientes();
+  setTimeout(closeClienteForm, 700);
+}
+async function loadClientes(){
+  const r = await apiGet('clientes');
+  if(!r.ok) return;
+  CLIENTES_CACHE = r.data;
+  const body = document.getElementById('clientes-body');
+  const empty = document.getElementById('clientes-empty');
+  body.innerHTML = '';
+  if(CLIENTES_CACHE.length===0){ empty.style.display='block'; return; }
+  empty.style.display='none';
+  CLIENTES_CACHE.forEach((c,idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${idx<3 && c.compras>0 ? `<span class="rank">${idx+1}</span>`:''}${c.nombre}</td>
+      <td class="mono" style="font-size:0.8rem;">${c.telefono||''}${c.email?(c.telefono?' · ':'')+c.email:''}</td>
+      <td class="num mono">${c.compras}</td>
+      <td class="num mono">${money(c.totalGastado)}</td>
+      <td>${fmtDate(c.ultimaCompra)}</td>
+      <td class="row-actions"><button onclick="toggleSeguimiento('${c.id}')">seguimiento</button></td>`;
+    body.appendChild(tr);
+
+    const segRow = document.createElement('tr');
+    segRow.className = 'seg-panel';
+    segRow.id = 'seg-'+c.id;
+    segRow.innerHTML = `<td colspan="6">
+      <div class="seg-list" id="seg-list-${c.id}"><div class="seg-empty">Cargando…</div></div>
+      <div class="seg-add">
+        <textarea id="seg-nota-${c.id}" placeholder="Nueva nota de seguimiento…"></textarea>
+        <button class="btn-secondary" onclick="addSeguimiento('${c.id}')">Guardar nota</button>
+      </div>
+    </td>`;
+    body.appendChild(segRow);
+  });
+}
+async function toggleSeguimiento(clienteId){
+  const row = document.getElementById('seg-'+clienteId);
+  const opening = !row.classList.contains('show');
+  document.querySelectorAll('.seg-panel').forEach(p=>p.classList.remove('show'));
+  if(opening){
+    row.classList.add('show');
+    await loadSeguimientos(clienteId);
+  }
+}
+async function loadSeguimientos(clienteId){
+  const r = await apiGet('seguimientos', 'clienteId='+encodeURIComponent(clienteId));
+  const list = document.getElementById('seg-list-'+clienteId);
+  if(!r.ok || r.data.length===0){
+    list.innerHTML = '<div class="seg-empty">Sin seguimientos todavía.</div>';
+    return;
+  }
+  list.innerHTML = r.data.map(s=>`
+    <div class="seg-item">
+      ${s.nota}
+      <div class="meta">${fmtDate(s.fecha)} · ${s.usuario||''}</div>
+    </div>`).join('');
+}
+async function addSeguimiento(clienteId){
+  const ta = document.getElementById('seg-nota-'+clienteId);
+  const nota = ta.value.trim();
+  if(!nota) return;
+  const r = await apiPost({ action:'addSeguimiento', clienteId, nota, usuario: SESSION.usuario });
+  if(!r.ok){ alert(r.error); return; }
+  ta.value = '';
+  loadSeguimientos(clienteId);
 }
 
 /* ---------- HISTORIAL ---------- */
@@ -668,14 +1086,14 @@ async function loadHistorial(){
   if(r.data.length === 0){ empty.style.display='block'; return; }
   empty.style.display='none';
   r.data.forEach(v=>{
-    const fecha = v.fecha ? new Date(v.fecha).toLocaleDateString('es-AR') : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${fecha}</td>
+      <td>${fmtDate(v.fecha)}</td>
       <td>${v.titulo}</td>
       <td class="num mono">${v.cantidad}</td>
       <td class="num mono">${money(v.total)}</td>
       <td class="num mono" style="color:#24503D;">${money(v.ganancia)}</td>
+      <td>${v.clienteNombre||'—'}</td>
       <td>${v.usuario||''}</td>`;
     body.appendChild(tr);
   });
