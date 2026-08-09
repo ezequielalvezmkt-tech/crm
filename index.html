@@ -703,6 +703,22 @@
     <section id="view-historial" class="view">
       <div class="panel-title">Historial de ventas</div>
       <div class="panel-sub">Todas las ventas registradas, más recientes primero</div>
+
+      <div class="toolbar" style="align-items:flex-end;">
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <div class="field" style="margin-bottom:0;"><label>Desde</label><input id="h-desde" type="date" onchange="renderHistorial()"></div>
+          <div class="field" style="margin-bottom:0;"><label>Hasta</label><input id="h-hasta" type="date" onchange="renderHistorial()"></div>
+        </div>
+        <button class="btn-ghost" onclick="limpiarFiltroHistorial()">Limpiar filtro</button>
+      </div>
+
+      <div class="dash-cards" style="flex-direction:row; margin-bottom:20px;">
+        <div class="stat" style="flex:1; min-width:140px;"><div class="k">Ventas (pedidos)</div><div class="v" id="h-tot-pedidos"></div></div>
+        <div class="stat" style="flex:1; min-width:140px;"><div class="k">Unidades</div><div class="v" id="h-tot-unidades"></div></div>
+        <div class="stat" style="flex:1; min-width:140px;"><div class="k">Total facturado</div><div class="v" id="h-tot-total"></div></div>
+        <div class="stat green" style="flex:1; min-width:140px;"><div class="k">Ganancia</div><div class="v" id="h-tot-ganancia"></div></div>
+      </div>
+
       <table class="ledger">
         <thead>
           <tr>
@@ -1302,27 +1318,65 @@ async function addSeguimiento(clienteId){
 }
 
 /* ---------- HISTORIAL ---------- */
+let VENTAS_CACHE = [];
+
 async function loadHistorial(){
   const r = await apiGet('ventas');
   if(!r.ok) return;
+  VENTAS_CACHE = r.data;
+  renderHistorial();
+}
+
+function limpiarFiltroHistorial(){
+  document.getElementById('h-desde').value = '';
+  document.getElementById('h-hasta').value = '';
+  renderHistorial();
+}
+
+function renderHistorial(){
+  const desde = document.getElementById('h-desde').value;
+  const hasta = document.getElementById('h-hasta').value;
+
+  let filtradas = VENTAS_CACHE;
+  if(desde){
+    const d0 = new Date(desde + 'T00:00:00');
+    filtradas = filtradas.filter(v => new Date(v.fecha) >= d0);
+  }
+  if(hasta){
+    const d1 = new Date(hasta + 'T23:59:59');
+    filtradas = filtradas.filter(v => new Date(v.fecha) <= d1);
+  }
+
   const body = document.getElementById('ventas-body');
   const empty = document.getElementById('ventas-empty');
   body.innerHTML = '';
-  if(r.data.length === 0){ empty.style.display='block'; return; }
-  empty.style.display='none';
-  r.data.forEach(v=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${fmtDate(v.fecha)}</td>
-      <td>${v.titulo}</td>
-      <td class="num mono">${v.cantidad}</td>
-      <td class="num mono">${money(v.total)}</td>
-      <td class="num mono" style="color:#24503D;">${money(v.ganancia)}</td>
-      <td>${v.canal||'Mayorista'}</td>
-      <td>${v.clienteNombre||'—'}</td>
-      <td>${v.usuario||''}</td>`;
-    body.appendChild(tr);
-  });
+  if(filtradas.length === 0){
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    filtradas.forEach(v=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${fmtDate(v.fecha)}</td>
+        <td>${v.titulo}</td>
+        <td class="num mono">${v.cantidad}</td>
+        <td class="num mono">${money(v.total)}</td>
+        <td class="num mono" style="color:#24503D;">${money(v.ganancia)}</td>
+        <td>${v.canal||'Mayorista'}</td>
+        <td>${v.clienteNombre||'—'}</td>
+        <td>${v.usuario||''}</td>`;
+      body.appendChild(tr);
+    });
+  }
+
+  const pedidosUnicos = new Set(filtradas.map(v=>v.idPedido || v.id));
+  const unidades = filtradas.reduce((s,v)=>s+v.cantidad, 0);
+  const total = filtradas.reduce((s,v)=>s+v.total, 0);
+  const ganancia = filtradas.reduce((s,v)=>s+v.ganancia, 0);
+  document.getElementById('h-tot-pedidos').textContent = pedidosUnicos.size;
+  document.getElementById('h-tot-unidades').textContent = unidades;
+  document.getElementById('h-tot-total').textContent = money(total);
+  document.getElementById('h-tot-ganancia').textContent = money(ganancia);
 }
 
 /* ---------- MOVIMIENTOS ---------- */
