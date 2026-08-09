@@ -479,6 +479,7 @@
     <button data-view="venta" onclick="showView('venta')">Registrar venta</button>
     <button data-view="clientes" onclick="showView('clientes')">Clientes</button>
     <button data-view="movimientos" onclick="showView('movimientos')">Movimientos</button>
+    <button data-view="capital" onclick="showView('capital')">Capital</button>
     <button data-view="historial" onclick="showView('historial')">Historial de ventas</button>
     <button data-view="dashboard" onclick="showView('dashboard')">Dashboard</button>
   </nav>
@@ -699,6 +700,59 @@
       <div id="clientes-empty" class="empty" style="display:none;">Todavía no cargaste clientes.</div>
     </section>
 
+    <!-- ---------- CAPITAL ---------- -->
+    <section id="view-capital" class="view">
+      <div class="toolbar">
+        <div>
+          <div class="panel-title">Capital del stock mayorista</div>
+          <div class="panel-sub">Lo que inyectás desde el dropshipping a este negocio, separado del stock que ya está comprado</div>
+        </div>
+        <div class="btns">
+          <button class="btn-secondary outline" onclick="openCapitalForm('Retiro')">+ Registrar retiro</button>
+          <button class="btn-secondary" onclick="openCapitalForm('Aporte')">+ Inyectar capital</button>
+        </div>
+      </div>
+
+      <div class="form-card" id="capital-form">
+        <h3 id="capital-form-title">Inyectar capital</h3>
+        <div class="form-grid g2">
+          <div class="field"><label>Monto</label><input id="cap-monto" type="number" step="0.01"></div>
+          <div class="field"><label>Fecha</label><input id="cap-fecha" type="date"></div>
+        </div>
+        <div class="field"><label>Nota (opcional)</label><input id="cap-nota" placeholder="Ej: ganancia dropshipping semana del 4/8"></div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="registrarCapital()">Guardar</button>
+          <button class="btn-ghost" onclick="closeCapitalForm()">Cancelar</button>
+        </div>
+        <div id="capital-msg"></div>
+      </div>
+
+      <div class="dash-cards" style="flex-direction:row; margin-bottom:20px;">
+        <div class="stat" style="flex:1; min-width:160px;"><div class="k">Capital aportado (histórico)</div><div class="v" id="cap-aportado"></div></div>
+        <div class="stat" style="flex:1; min-width:160px;"><div class="k">Capital retirado</div><div class="v" id="cap-retirado"></div></div>
+        <div class="stat green" style="flex:1; min-width:160px;"><div class="k">Capital neto aportado</div><div class="v" id="cap-neto"></div></div>
+      </div>
+
+      <div class="receipt" style="max-width:440px; margin-bottom:28px;">
+        <h2>Posición del negocio mayorista</h2>
+        <div class="date" id="cap-fecha-calc"></div>
+        <div class="r-line"><span>Capital neto aportado</span><span id="cap-r-neto"></span></div>
+        <div class="r-line green"><span>+ Ganancia generada</span><span id="cap-r-ganancia"></span></div>
+        <div class="rule"></div>
+        <div class="r-line big"><span>Patrimonio total del negocio</span><span id="cap-r-patrimonio"></span></div>
+        <div class="rule"></div>
+        <div class="r-line"><span>· Invertido en stock (a costo)</span><span id="cap-r-stock"></span></div>
+        <div class="r-line"><span>· Efectivo disponible sin usar</span><span id="cap-r-efectivo"></span></div>
+      </div>
+
+      <div class="section-label">Historial de aportes y retiros</div>
+      <table class="ledger">
+        <thead><tr><th>Fecha</th><th>Tipo</th><th class="num">Monto</th><th>Nota</th><th>Usuario</th></tr></thead>
+        <tbody id="capital-body"></tbody>
+      </table>
+      <div id="capital-empty" class="empty" style="display:none;">Todavía no registraste aportes de capital.</div>
+    </section>
+
     <!-- ---------- HISTORIAL ---------- -->
     <section id="view-historial" class="view">
       <div class="panel-title">Historial de ventas</div>
@@ -716,6 +770,7 @@
         <div class="stat" style="flex:1; min-width:140px;"><div class="k">Ventas (pedidos)</div><div class="v" id="h-tot-pedidos"></div></div>
         <div class="stat" style="flex:1; min-width:140px;"><div class="k">Unidades</div><div class="v" id="h-tot-unidades"></div></div>
         <div class="stat" style="flex:1; min-width:140px;"><div class="k">Total facturado</div><div class="v" id="h-tot-total"></div></div>
+        <div class="stat" style="flex:1; min-width:140px;"><div class="k">Capital vendido</div><div class="v" id="h-tot-capital"></div></div>
         <div class="stat green" style="flex:1; min-width:140px;"><div class="k">Ganancia</div><div class="v" id="h-tot-ganancia"></div></div>
       </div>
 
@@ -726,6 +781,7 @@
             <th>Título</th>
             <th class="num">Cant.</th>
             <th class="num">Total</th>
+            <th class="num">Capital</th>
             <th class="num">Ganancia</th>
             <th>Canal</th>
             <th>Cliente</th>
@@ -912,6 +968,7 @@ function showView(name){
   if(name==='venta') loadVentaForm();
   if(name==='clientes') loadClientes();
   if(name==='movimientos') loadMovimientos();
+  if(name==='capital') loadCapital();
   if(name==='historial') loadHistorial();
   if(name==='dashboard') loadDashboard();
 }
@@ -1317,6 +1374,79 @@ async function addSeguimiento(clienteId){
   loadSeguimientos(clienteId);
 }
 
+/* ---------- CAPITAL ---------- */
+let CAPITAL_TIPO = 'Aporte';
+
+function openCapitalForm(tipo){
+  CAPITAL_TIPO = tipo;
+  document.getElementById('capital-form-title').textContent = tipo==='Retiro' ? 'Registrar retiro' : 'Inyectar capital';
+  document.getElementById('capital-form').classList.add('show');
+  document.getElementById('cap-monto').value = '';
+  document.getElementById('cap-fecha').value = todayISO();
+  document.getElementById('cap-nota').value = '';
+  document.getElementById('capital-msg').style.display = 'none';
+}
+function closeCapitalForm(){
+  document.getElementById('capital-form').classList.remove('show');
+}
+async function registrarCapital(){
+  const msg = document.getElementById('capital-msg');
+  msg.className=''; msg.style.display='none';
+  const monto = document.getElementById('cap-monto').value;
+  if(!monto || Number(monto)<=0){ msg.className='err'; msg.textContent='Ingresá un monto válido.'; return; }
+  const r = await apiPost({
+    action:'registrarCapital',
+    tipo: CAPITAL_TIPO,
+    monto,
+    fecha: document.getElementById('cap-fecha').value,
+    nota: document.getElementById('cap-nota').value.trim(),
+    usuario: SESSION.usuario
+  });
+  if(!r.ok){ msg.className='err'; msg.textContent=r.error; return; }
+  msg.className='ok';
+  msg.textContent = (CAPITAL_TIPO==='Retiro' ? 'Retiro' : 'Aporte') + ' registrado.';
+  await loadCapital();
+  setTimeout(closeCapitalForm, 800);
+}
+async function loadCapital(){
+  const [r, d] = await Promise.all([apiGet('capital'), apiGet('dashboard')]);
+
+  if(r.ok){
+    const body = document.getElementById('capital-body');
+    const empty = document.getElementById('capital-empty');
+    body.innerHTML = '';
+    if(r.data.length===0){
+      empty.style.display='block';
+    } else {
+      empty.style.display='none';
+      r.data.forEach(m=>{
+        const color = m.tipo==='Retiro' ? '#9C4A32' : '#24503D';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${fmtDate(m.fecha)}</td>
+          <td style="color:${color}; font-weight:600;">${m.tipo}</td>
+          <td class="num mono" style="color:${color};">${m.tipo==='Retiro'?'−':'+'}${money(m.monto)}</td>
+          <td>${m.nota||''}</td>
+          <td>${m.usuario||''}</td>`;
+        body.appendChild(tr);
+      });
+    }
+  }
+
+  if(d.ok){
+    const dd = d.data;
+    document.getElementById('cap-aportado').textContent = money(dd.capitalAportado);
+    document.getElementById('cap-retirado').textContent = money(dd.capitalRetirado);
+    document.getElementById('cap-neto').textContent = money(dd.capitalNeto);
+    document.getElementById('cap-fecha-calc').textContent = new Date().toLocaleString('es-AR');
+    document.getElementById('cap-r-neto').textContent = money(dd.capitalNeto);
+    document.getElementById('cap-r-ganancia').textContent = money(dd.gananciaGenerada);
+    document.getElementById('cap-r-patrimonio').textContent = money(dd.patrimonioMayorista);
+    document.getElementById('cap-r-stock').textContent = money(dd.valorStockCosto);
+    document.getElementById('cap-r-efectivo').textContent = money(dd.efectivoDisponible);
+  }
+}
+
 /* ---------- HISTORIAL ---------- */
 let VENTAS_CACHE = [];
 
@@ -1355,12 +1485,14 @@ function renderHistorial(){
   } else {
     empty.style.display = 'none';
     filtradas.forEach(v=>{
+      const capital = v.precioCostoUnit * v.cantidad;
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${fmtDate(v.fecha)}</td>
         <td>${v.titulo}</td>
         <td class="num mono">${v.cantidad}</td>
         <td class="num mono">${money(v.total)}</td>
+        <td class="num mono">${money(capital)}</td>
         <td class="num mono" style="color:#24503D;">${money(v.ganancia)}</td>
         <td>${v.canal||'Mayorista'}</td>
         <td>${v.clienteNombre||'—'}</td>
@@ -1372,10 +1504,12 @@ function renderHistorial(){
   const pedidosUnicos = new Set(filtradas.map(v=>v.idPedido || v.id));
   const unidades = filtradas.reduce((s,v)=>s+v.cantidad, 0);
   const total = filtradas.reduce((s,v)=>s+v.total, 0);
+  const capitalVendido = filtradas.reduce((s,v)=>s+(v.precioCostoUnit*v.cantidad), 0);
   const ganancia = filtradas.reduce((s,v)=>s+v.ganancia, 0);
   document.getElementById('h-tot-pedidos').textContent = pedidosUnicos.size;
   document.getElementById('h-tot-unidades').textContent = unidades;
   document.getElementById('h-tot-total').textContent = money(total);
+  document.getElementById('h-tot-capital').textContent = money(capitalVendido);
   document.getElementById('h-tot-ganancia').textContent = money(ganancia);
 }
 
