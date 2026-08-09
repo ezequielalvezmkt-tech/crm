@@ -355,6 +355,61 @@
   .stat .v{font-family:'IBM Plex Mono',monospace; font-size:1.3rem; font-weight:600; margin-top:2px;}
   .stat.green .v{color:var(--green);}
 
+  /* ---------- CARRITO / CANAL ---------- */
+  .canal-toggle{
+    display:flex;
+    gap:0;
+    margin-bottom:18px;
+    border:1px solid var(--line);
+    width:fit-content;
+  }
+  .canal-toggle button{
+    background:var(--paper);
+    padding:9px 18px;
+    font-size:0.82rem;
+    font-weight:600;
+    color:var(--ink-soft);
+  }
+  .canal-toggle button.active{
+    background:var(--ink);
+    color:var(--paper);
+  }
+  .add-row{
+    display:flex;
+    gap:10px;
+    align-items:flex-end;
+    margin-bottom:18px;
+  }
+  .add-row .field{flex:1; margin-bottom:0;}
+  .add-row .field.qty{flex:0 0 90px;}
+  .add-row button{
+    background:var(--green);
+    color:#fff;
+    padding:10px 16px;
+    border-radius:2px;
+    font-size:0.82rem;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  table.cart{width:100%; border-collapse:collapse; margin-bottom:6px;}
+  table.cart th{
+    text-align:left;
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--ink-soft);
+    padding:6px 8px;
+    border-bottom:1px solid var(--line);
+  }
+  table.cart td{
+    padding:8px;
+    border-bottom:1px solid var(--line);
+    font-size:0.85rem;
+  }
+  table.cart td.num{font-family:'IBM Plex Mono',monospace; text-align:right;}
+  table.cart button.rm{background:transparent; color:var(--rust); font-size:0.75rem; text-decoration:underline;}
+  .cart-empty{color:var(--ink-soft); font-size:0.82rem; padding:10px 0;}
+
   /* ---------- CLIENTES ---------- */
   .rank{
     display:inline-flex;
@@ -423,6 +478,7 @@
     <button data-view="stock" class="active" onclick="showView('stock')">Stock</button>
     <button data-view="venta" onclick="showView('venta')">Registrar venta</button>
     <button data-view="clientes" onclick="showView('clientes')">Clientes</button>
+    <button data-view="movimientos" onclick="showView('movimientos')">Movimientos</button>
     <button data-view="historial" onclick="showView('historial')">Historial de ventas</button>
     <button data-view="dashboard" onclick="showView('dashboard')">Dashboard</button>
   </nav>
@@ -524,11 +580,16 @@
     <!-- ---------- REGISTRAR VENTA ---------- -->
     <section id="view-venta" class="view">
       <div class="panel-title">Registrar venta</div>
-      <div class="panel-sub">Descuenta el stock automáticamente, calcula la ganancia y queda ligada al cliente</div>
+      <div class="panel-sub">Agregá uno o varios títulos al pedido (libros surtidos) — descuenta el stock y calcula la ganancia al confirmar</div>
 
-      <div class="venta-card">
+      <div class="venta-card" style="max-width:640px;">
 
-        <div class="cliente-box">
+        <div class="canal-toggle">
+          <button type="button" id="canal-btn-mayorista" class="active" onclick="setCanal('Mayorista')">Mayorista</button>
+          <button type="button" id="canal-btn-minorista" onclick="setCanal('Minorista')">Minorista (venta web)</button>
+        </div>
+
+        <div class="cliente-box" id="v-cliente-box">
           <div class="field">
             <label>Cliente</label>
             <select id="v-cliente" onchange="toggleClienteNuevo()"></select>
@@ -543,25 +604,54 @@
           </div>
         </div>
 
-        <div class="field">
-          <label>Título</label>
-          <select id="v-producto" onchange="updateVentaPreview()"></select>
-        </div>
-        <div class="field">
-          <label>Cantidad</label>
-          <input id="v-cantidad" type="number" min="1" value="1" oninput="updateVentaPreview()">
+        <div class="add-row">
+          <div class="field">
+            <label>Título</label>
+            <select id="v-producto"></select>
+          </div>
+          <div class="field qty">
+            <label>Cant.</label>
+            <input id="v-cantidad" type="number" min="1" value="1">
+          </div>
+          <button type="button" onclick="agregarAlCarrito()">+ Agregar</button>
         </div>
 
+        <table class="cart">
+          <thead>
+            <tr><th>Título</th><th class="num">Cant.</th><th class="num">Subtotal</th><th></th></tr>
+          </thead>
+          <tbody id="cart-body"></tbody>
+        </table>
+        <div id="cart-empty" class="cart-empty">Todavía no agregaste títulos al pedido.</div>
+
         <div class="venta-preview" id="v-preview" style="display:none;">
-          <div class="line"><span>Precio unitario</span><span id="vp-unit" class="mono"></span></div>
-          <div class="line"><span>Stock disponible</span><span id="vp-stock" class="mono"></span></div>
-          <div class="line total"><span>Total</span><span id="vp-total" class="mono"></span></div>
+          <div class="line total"><span>Total del pedido</span><span id="vp-total" class="mono"></span></div>
           <div class="line" style="color:#24503D;"><span>Ganancia estimada</span><span id="vp-ganancia" class="mono"></span></div>
         </div>
 
         <button class="btn-primary" style="margin-top:16px;" onclick="registrarVenta()">Confirmar venta</button>
         <div id="venta-msg"></div>
       </div>
+    </section>
+
+    <!-- ---------- MOVIMIENTOS ---------- -->
+    <section id="view-movimientos" class="view">
+      <div class="panel-title">Movimientos de stock</div>
+      <div class="panel-sub">Ingresos de mercadería y ventas (mayorista y minorista web), en un solo lugar</div>
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Título</th>
+            <th class="num">Cantidad</th>
+            <th>Detalle</th>
+            <th>Usuario</th>
+          </tr>
+        </thead>
+        <tbody id="movimientos-body"></tbody>
+      </table>
+      <div id="movimientos-empty" class="empty" style="display:none;">Todavía no hay movimientos registrados.</div>
     </section>
 
     <!-- ---------- CLIENTES ---------- -->
@@ -617,6 +707,7 @@
             <th class="num">Cant.</th>
             <th class="num">Total</th>
             <th class="num">Ganancia</th>
+            <th>Canal</th>
             <th>Cliente</th>
             <th>Usuario</th>
           </tr>
@@ -745,6 +836,7 @@ function showView(name){
   if(name==='stock'){ loadStock(); loadCompras(); }
   if(name==='venta') loadVentaForm();
   if(name==='clientes') loadClientes();
+  if(name==='movimientos') loadMovimientos();
   if(name==='historial') loadHistorial();
   if(name==='dashboard') loadDashboard();
 }
@@ -897,7 +989,17 @@ async function loadCompras(){
   });
 }
 
-/* ---------- VENTA ---------- */
+/* ---------- VENTA (carrito multi-titulo + canal) ---------- */
+let CANAL = 'Mayorista';
+let CARRITO = []; // [{id, titulo, cantidad, precioVenta, precioCosto, stockDisp}]
+
+function setCanal(c){
+  CANAL = c;
+  document.getElementById('canal-btn-mayorista').classList.toggle('active', c==='Mayorista');
+  document.getElementById('canal-btn-minorista').classList.toggle('active', c==='Minorista');
+  document.getElementById('v-cliente-box').style.display = (c==='Mayorista') ? 'block' : 'none';
+}
+
 async function loadVentaForm(){
   if(STOCK_CACHE.length === 0) await loadStock();
   if(CLIENTES_CACHE.length === 0) await loadClientesCache();
@@ -911,7 +1013,8 @@ async function loadVentaForm(){
     CLIENTES_CACHE.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
   document.getElementById('v-cliente-nuevo-wrap').style.display = 'none';
 
-  updateVentaPreview();
+  setCanal(CANAL);
+  renderCarrito();
 }
 async function loadClientesCache(){
   const r = await apiGet('clientes');
@@ -921,59 +1024,106 @@ function toggleClienteNuevo(){
   const val = document.getElementById('v-cliente').value;
   document.getElementById('v-cliente-nuevo-wrap').style.display = (val==='__nuevo__') ? 'block' : 'none';
 }
-function updateVentaPreview(){
+
+function agregarAlCarrito(){
   const id = document.getElementById('v-producto').value;
+  const cantidad = Number(document.getElementById('v-cantidad').value) || 0;
   const p = STOCK_CACHE.find(x=>x.id===id);
-  const cant = Number(document.getElementById('v-cantidad').value) || 0;
-  const prev = document.getElementById('v-preview');
-  if(!p){ prev.style.display='none'; return; }
-  prev.style.display='block';
-  document.getElementById('vp-unit').textContent = money(p.precioVenta);
-  document.getElementById('vp-stock').textContent = p.stock;
-  document.getElementById('vp-total').textContent = money(p.precioVenta*cant);
-  document.getElementById('vp-ganancia').textContent = money((p.precioVenta-p.precioCosto)*cant);
+  const msg = document.getElementById('venta-msg');
+  msg.className=''; msg.style.display='none';
+  if(!p || cantidad<=0){ return; }
+
+  const yaEnCarrito = CARRITO.find(x=>x.id===id);
+  const cantidadPrevia = yaEnCarrito ? yaEnCarrito.cantidad : 0;
+  if(cantidad + cantidadPrevia > p.stock){
+    msg.className='err'; msg.textContent = `No hay suficiente stock de "${p.titulo}" (disponible: ${p.stock}).`;
+    return;
+  }
+
+  if(yaEnCarrito){
+    yaEnCarrito.cantidad += cantidad;
+  } else {
+    CARRITO.push({ id:p.id, titulo:p.titulo, cantidad, precioVenta:p.precioVenta, precioCosto:p.precioCosto });
+  }
+  document.getElementById('v-cantidad').value = 1;
+  renderCarrito();
 }
+function quitarDelCarrito(id){
+  CARRITO = CARRITO.filter(x=>x.id!==id);
+  renderCarrito();
+}
+function renderCarrito(){
+  const body = document.getElementById('cart-body');
+  const empty = document.getElementById('cart-empty');
+  const preview = document.getElementById('v-preview');
+  body.innerHTML = '';
+  if(CARRITO.length===0){
+    empty.style.display='block';
+    preview.style.display='none';
+    return;
+  }
+  empty.style.display='none';
+  preview.style.display='block';
+  let total=0, ganancia=0;
+  CARRITO.forEach(item=>{
+    const subtotal = item.precioVenta*item.cantidad;
+    total += subtotal;
+    ganancia += (item.precioVenta-item.precioCosto)*item.cantidad;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.titulo}</td>
+      <td class="num mono">${item.cantidad}</td>
+      <td class="num mono">${money(subtotal)}</td>
+      <td><button class="rm" onclick="quitarDelCarrito('${item.id}')">quitar</button></td>`;
+    body.appendChild(tr);
+  });
+  document.getElementById('vp-total').textContent = money(total);
+  document.getElementById('vp-ganancia').textContent = money(ganancia);
+}
+
 async function registrarVenta(){
-  const id = document.getElementById('v-producto').value;
-  const cantidad = Number(document.getElementById('v-cantidad').value);
   const msg = document.getElementById('venta-msg');
   msg.className = ''; msg.style.display='none';
-  if(!id || !cantidad || cantidad<=0){
-    msg.className='err'; msg.textContent='Elegí un título y una cantidad válida.'; return;
+  if(CARRITO.length===0){
+    msg.className='err'; msg.textContent='Agregá al menos un título al pedido.'; return;
   }
 
-  let clienteId = document.getElementById('v-cliente').value;
+  let clienteId = '';
   let clienteNombre = '';
 
-  if(clienteId === '__nuevo__'){
-    const nombre = document.getElementById('v-cliente-nombre').value.trim();
-    if(!nombre){ msg.className='err'; msg.textContent='Ingresá el nombre del cliente nuevo.'; return; }
-    const rc = await apiPost({
-      action:'addCliente',
-      nombre,
-      telefono: document.getElementById('v-cliente-telefono').value.trim(),
-      email: document.getElementById('v-cliente-email').value.trim(),
-      localidad: document.getElementById('v-cliente-localidad').value.trim()
-    });
-    if(!rc.ok){ msg.className='err'; msg.textContent=rc.error; return; }
-    clienteId = rc.id;
-    clienteNombre = nombre;
-    CLIENTES_CACHE = []; // fuerza recarga la próxima vez
-  } else if(clienteId){
-    const c = CLIENTES_CACHE.find(x=>x.id===clienteId);
-    clienteNombre = c ? c.nombre : '';
-  } else {
-    clienteId = '';
+  if(CANAL === 'Mayorista'){
+    clienteId = document.getElementById('v-cliente').value;
+    if(clienteId === '__nuevo__'){
+      const nombre = document.getElementById('v-cliente-nombre').value.trim();
+      if(!nombre){ msg.className='err'; msg.textContent='Ingresá el nombre del cliente nuevo.'; return; }
+      const rc = await apiPost({
+        action:'addCliente',
+        nombre,
+        telefono: document.getElementById('v-cliente-telefono').value.trim(),
+        email: document.getElementById('v-cliente-email').value.trim(),
+        localidad: document.getElementById('v-cliente-localidad').value.trim()
+      });
+      if(!rc.ok){ msg.className='err'; msg.textContent=rc.error; return; }
+      clienteId = rc.id;
+      clienteNombre = nombre;
+      CLIENTES_CACHE = []; // fuerza recarga la próxima vez
+    } else if(clienteId){
+      const c = CLIENTES_CACHE.find(x=>x.id===clienteId);
+      clienteNombre = c ? c.nombre : '';
+    } else {
+      clienteId = '';
+    }
   }
 
-  const r = await apiPost({ action:'registrarVenta', id, cantidad, usuario: SESSION.usuario, clienteId, clienteNombre });
+  const items = CARRITO.map(x=>({ id:x.id, cantidad:x.cantidad }));
+  const r = await apiPost({ action:'registrarVenta', items, usuario: SESSION.usuario, clienteId, clienteNombre, canal: CANAL });
   if(!r.ok){
     msg.className='err'; msg.textContent = r.error;
     return;
   }
   msg.className='ok';
-  msg.textContent = `Venta registrada — total ${money(r.totalVenta)}, ganancia ${money(r.ganancia)}. Stock restante: ${r.stockRestante}.`;
-  document.getElementById('v-cantidad').value = 1;
+  msg.textContent = `Venta registrada — ${r.items} título(s), total ${money(r.totalVenta)}, ganancia ${money(r.ganancia)}.`;
+  CARRITO = [];
   document.getElementById('v-cliente-nombre').value = '';
   document.getElementById('v-cliente-telefono').value = '';
   document.getElementById('v-cliente-email').value = '';
@@ -1093,8 +1243,32 @@ async function loadHistorial(){
       <td class="num mono">${v.cantidad}</td>
       <td class="num mono">${money(v.total)}</td>
       <td class="num mono" style="color:#24503D;">${money(v.ganancia)}</td>
+      <td>${v.canal||'Mayorista'}</td>
       <td>${v.clienteNombre||'—'}</td>
       <td>${v.usuario||''}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+/* ---------- MOVIMIENTOS ---------- */
+async function loadMovimientos(){
+  const r = await apiGet('movimientos');
+  if(!r.ok) return;
+  const body = document.getElementById('movimientos-body');
+  const empty = document.getElementById('movimientos-empty');
+  body.innerHTML = '';
+  if(r.data.length===0){ empty.style.display='block'; return; }
+  empty.style.display='none';
+  r.data.forEach(m=>{
+    const color = m.signo==='+' ? '#24503D' : '#9C4A32';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${fmtDate(m.fecha)}</td>
+      <td>${m.tipo}</td>
+      <td>${m.titulo}</td>
+      <td class="num mono" style="color:${color};">${m.signo}${m.cantidad}</td>
+      <td>${m.detalle||''}</td>
+      <td>${m.usuario||''}</td>`;
     body.appendChild(tr);
   });
 }
