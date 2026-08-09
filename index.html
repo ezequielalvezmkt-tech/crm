@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro · Stock Mayorista</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F1E7;
+    --panel:#EDE6D6;
+    --ink:#2A241E;
+    --ink-soft:#6b6154;
+    --green:#24503D;
+    --green-soft:#e4ece6;
+    --rust:#9C4A32;
+    --rust-soft:#f3e4de;
+    --gold:#B08D57;
+    --line:#d8cfba;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .display{font-family:'Fraunces',serif;}
+
+  /* ---------- LOGIN ---------- */
+  #login-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .login-card{
+    width:100%;
+    max-width:340px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:36px 32px;
+    position:relative;
+  }
+  .login-card::before{
+    content:"";
+    position:absolute;
+    top:0;left:0;right:0;
+    height:4px;
+    background:var(--green);
+  }
+  .login-card h1{
+    font-family:'Fraunces',serif;
+    font-size:1.5rem;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  .login-card p.sub{
+    color:var(--ink-soft);
+    font-size:0.85rem;
+    margin:0 0 24px;
+  }
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+  }
+  input{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    background:var(--paper);
+    font-family:'Inter',sans-serif;
+    font-size:0.95rem;
+    color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--green); outline-offset:0;}
+  button{
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    border:none;
+  }
+  .btn-primary{
+    width:100%;
+    background:var(--green);
+    color:#fff;
+    padding:11px;
+    border-radius:2px;
+    font-weight:600;
+    font-size:0.9rem;
+    margin-top:6px;
+  }
+  .btn-primary:hover{background:#1c3e30;}
+  #login-error{
+    color:var(--rust);
+    font-size:0.82rem;
+    margin-top:10px;
+    display:none;
+  }
+
+  /* ---------- APP SHELL ---------- */
+  #app{display:none;}
+  header.appbar{
+    background:var(--ink);
+    color:var(--paper);
+    padding:16px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  header.appbar .brand{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.1rem;
+  }
+  header.appbar .who{
+    font-size:0.8rem;
+    color:#c9c2b4;
+  }
+  header.appbar .who span{color:var(--gold); font-weight:600;}
+  header.appbar button.logout{
+    background:transparent;
+    color:#c9c2b4;
+    font-size:0.78rem;
+    text-decoration:underline;
+  }
+
+  nav.tabs{
+    display:flex;
+    gap:2px;
+    background:var(--panel);
+    padding:0 24px;
+    border-bottom:1px solid var(--line);
+    overflow-x:auto;
+  }
+  nav.tabs button{
+    background:transparent;
+    padding:13px 16px;
+    font-size:0.85rem;
+    font-weight:500;
+    color:var(--ink-soft);
+    border-bottom:2px solid transparent;
+    white-space:nowrap;
+  }
+  nav.tabs button.active{
+    color:var(--ink);
+    border-bottom:2px solid var(--green);
+    font-weight:600;
+  }
+
+  main{padding:24px 28px 60px; max-width:1100px; margin:0 auto;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .panel-title{
+    font-family:'Fraunces',serif;
+    font-size:1.2rem;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  .panel-sub{color:var(--ink-soft); font-size:0.85rem; margin:0 0 20px;}
+
+  /* ---------- STOCK TABLE ---------- */
+  table.ledger{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--panel);
+    border:1px solid var(--line);
+  }
+  table.ledger th{
+    text-align:left;
+    font-size:0.7rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--ink-soft);
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    font-weight:600;
+  }
+  table.ledger td{
+    padding:11px 14px;
+    border-bottom:1px solid var(--line);
+    font-size:0.88rem;
+    vertical-align:middle;
+  }
+  table.ledger tr:last-child td{border-bottom:none;}
+  table.ledger td.num, table.ledger th.num{
+    font-family:'IBM Plex Mono',monospace;
+    text-align:right;
+  }
+  table.ledger td.low{color:var(--rust); font-weight:600;}
+  .row-actions button{
+    background:transparent;
+    font-size:0.76rem;
+    color:var(--green);
+    text-decoration:underline;
+    margin-right:10px;
+  }
+  .row-actions button.del{color:var(--rust);}
+
+  .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; flex-wrap:wrap;}
+  .btn-secondary{
+    background:var(--ink);
+    color:var(--paper);
+    padding:9px 16px;
+    border-radius:2px;
+    font-size:0.82rem;
+    font-weight:600;
+  }
+
+  /* ---------- FORM CARD (modal-ish inline) ---------- */
+  .form-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:20px;
+    margin-bottom:20px;
+    display:none;
+  }
+  .form-card.show{display:block;}
+  .form-grid{
+    display:grid;
+    grid-template-columns:2fr 1fr 1fr 1fr;
+    gap:12px;
+    align-items:end;
+  }
+  @media(max-width:700px){.form-grid{grid-template-columns:1fr 1fr;}}
+  .form-actions{margin-top:14px; display:flex; gap:10px;}
+  .btn-ghost{
+    background:transparent;
+    border:1px solid var(--line) !important;
+    color:var(--ink-soft);
+    padding:9px 16px;
+    border-radius:2px;
+    font-size:0.82rem;
+  }
+
+  /* ---------- VENTA ---------- */
+  .venta-card{
+    max-width:480px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:24px;
+  }
+  select{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    font-family:'Inter',sans-serif;
+    font-size:0.95rem;
+    color:var(--ink);
+  }
+  .venta-preview{
+    margin-top:16px;
+    padding:14px;
+    background:var(--paper);
+    border:1px dashed var(--line);
+    font-size:0.85rem;
+  }
+  .venta-preview .line{display:flex; justify-content:space-between; margin-bottom:4px;}
+  .venta-preview .line.total{font-weight:700; border-top:1px solid var(--line); padding-top:6px; margin-top:6px;}
+  #venta-msg{margin-top:14px; font-size:0.85rem; display:none; padding:10px 12px; border-radius:2px;}
+  #venta-msg.ok{background:var(--green-soft); color:var(--green); display:block;}
+  #venta-msg.err{background:var(--rust-soft); color:var(--rust); display:block;}
+
+  /* ---------- DASHBOARD ---------- */
+  .receipt{
+    max-width:420px;
+    background:#fff;
+    color:var(--ink);
+    padding:26px 24px 20px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.08);
+    position:relative;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .receipt::after{
+    content:"";
+    position:absolute;
+    left:0; right:0; bottom:-9px;
+    height:18px;
+    background:
+      radial-gradient(circle at 9px 0, transparent 9px, #fff 9.5px) repeat-x;
+    background-size:18px 18px;
+  }
+  .receipt h2{
+    font-family:'Fraunces',serif;
+    font-size:1.05rem;
+    text-align:center;
+    margin:0 0 2px;
+    letter-spacing:0.02em;
+  }
+  .receipt .date{text-align:center; font-size:0.7rem; color:var(--ink-soft); margin-bottom:16px;}
+  .receipt .rule{border-top:1px dashed var(--line); margin:10px 0;}
+  .receipt .r-line{display:flex; justify-content:space-between; font-size:0.82rem; padding:3px 0;}
+  .receipt .r-line.big{font-size:0.95rem; font-weight:600; padding:8px 0;}
+  .receipt .r-line.green{color:var(--green);}
+  .receipt .r-line span:last-child{font-weight:600;}
+
+  .dash-grid{display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;}
+  .dash-cards{display:flex; flex-direction:column; gap:14px; flex:1; min-width:220px;}
+  .stat{
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:14px 16px;
+  }
+  .stat .k{font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft);}
+  .stat .v{font-family:'IBM Plex Mono',monospace; font-size:1.3rem; font-weight:600; margin-top:2px;}
+  .stat.green .v{color:var(--green);}
+
+  /* Historial */
+  .empty{color:var(--ink-soft); font-size:0.85rem; padding:20px 0;}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>Registro de Stock</h1>
+    <p class="sub">Venta mayorista · acceso interno</p>
+    <div class="field">
+      <label>Usuario</label>
+      <input id="login-user" type="text" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input id="login-pass" type="password" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" onclick="login()">Ingresar</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app">
+  <header class="appbar">
+    <div class="brand">Registro de Stock — Mayorista</div>
+    <div class="who">Conectado como <span id="who-name"></span> · <button class="logout" onclick="logout()">salir</button></div>
+  </header>
+
+  <nav class="tabs">
+    <button data-view="stock" class="active" onclick="showView('stock')">Stock</button>
+    <button data-view="venta" onclick="showView('venta')">Registrar venta</button>
+    <button data-view="historial" onclick="showView('historial')">Historial de ventas</button>
+    <button data-view="dashboard" onclick="showView('dashboard')">Dashboard</button>
+  </nav>
+
+  <main>
+
+    <!-- ---------- STOCK ---------- -->
+    <section id="view-stock" class="view active">
+      <div class="toolbar">
+        <div>
+          <div class="panel-title">Stock</div>
+          <div class="panel-sub">Costo, precio de venta y unidades disponibles por título</div>
+        </div>
+        <button class="btn-secondary" onclick="openForm()">+ Nuevo título</button>
+      </div>
+
+      <div class="form-card" id="form-card">
+        <div class="form-grid">
+          <div class="field"><label>Título</label><input id="f-titulo"></div>
+          <div class="field"><label>Precio costo</label><input id="f-costo" type="number" step="0.01"></div>
+          <div class="field"><label>Precio venta</label><input id="f-venta" type="number" step="0.01"></div>
+          <div class="field"><label>Stock</label><input id="f-stock" type="number" step="1"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="saveProducto()">Guardar</button>
+          <button class="btn-ghost" onclick="closeForm()">Cancelar</button>
+        </div>
+      </div>
+
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th class="num">Costo</th>
+            <th class="num">Venta</th>
+            <th class="num">Margen u.</th>
+            <th class="num">Stock</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="stock-body"></tbody>
+      </table>
+    </section>
+
+    <!-- ---------- REGISTRAR VENTA ---------- -->
+    <section id="view-venta" class="view">
+      <div class="panel-title">Registrar venta</div>
+      <div class="panel-sub">Descuenta el stock automáticamente y calcula la ganancia</div>
+
+      <div class="venta-card">
+        <div class="field">
+          <label>Título</label>
+          <select id="v-producto" onchange="updateVentaPreview()"></select>
+        </div>
+        <div class="field">
+          <label>Cantidad</label>
+          <input id="v-cantidad" type="number" min="1" value="1" oninput="updateVentaPreview()">
+        </div>
+
+        <div class="venta-preview" id="v-preview" style="display:none;">
+          <div class="line"><span>Precio unitario</span><span id="vp-unit" class="mono"></span></div>
+          <div class="line"><span>Stock disponible</span><span id="vp-stock" class="mono"></span></div>
+          <div class="line total"><span>Total</span><span id="vp-total" class="mono"></span></div>
+          <div class="line" style="color:#24503D;"><span>Ganancia estimada</span><span id="vp-ganancia" class="mono"></span></div>
+        </div>
+
+        <button class="btn-primary" style="margin-top:16px;" onclick="registrarVenta()">Confirmar venta</button>
+        <div id="venta-msg"></div>
+      </div>
+    </section>
+
+    <!-- ---------- HISTORIAL ---------- -->
+    <section id="view-historial" class="view">
+      <div class="panel-title">Historial de ventas</div>
+      <div class="panel-sub">Todas las ventas registradas, más recientes primero</div>
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Título</th>
+            <th class="num">Cant.</th>
+            <th class="num">Total</th>
+            <th class="num">Ganancia</th>
+            <th>Usuario</th>
+          </tr>
+        </thead>
+        <tbody id="ventas-body"></tbody>
+      </table>
+      <div id="ventas-empty" class="empty" style="display:none;">Todavía no hay ventas registradas.</div>
+    </section>
+
+    <!-- ---------- DASHBOARD ---------- -->
+    <section id="view-dashboard" class="view">
+      <div class="panel-title">Dashboard</div>
+      <div class="panel-sub">Valor del stock y ganancias, en tiempo real</div>
+
+      <div class="dash-grid">
+        <div class="receipt">
+          <h2>Cierre de posición</h2>
+          <div class="date" id="d-fecha"></div>
+          <div class="r-line"><span>Títulos en catálogo</span><span id="d-titulos"></span></div>
+          <div class="r-line"><span>Unidades en stock</span><span id="d-unidades"></span></div>
+          <div class="rule"></div>
+          <div class="r-line"><span>Stock a costo</span><span id="d-costo"></span></div>
+          <div class="r-line"><span>Stock a precio venta</span><span id="d-venta"></span></div>
+          <div class="r-line big green"><span>Ganancia potencial</span><span id="d-potencial"></span></div>
+          <div class="rule"></div>
+          <div class="r-line"><span>Ventas realizadas</span><span id="d-cantventas"></span></div>
+          <div class="r-line"><span>Unidades vendidas</span><span id="d-unidvendidas"></span></div>
+          <div class="r-line"><span>Total facturado</span><span id="d-facturado"></span></div>
+          <div class="r-line big green"><span>Ganancia generada</span><span id="d-generada"></span></div>
+        </div>
+
+        <div class="dash-cards">
+          <div class="stat green">
+            <div class="k">Ganancia total acumulada + potencial</div>
+            <div class="v" id="d-total-ganancia"></div>
+          </div>
+          <div class="stat">
+            <div class="k">Valor total del stock (a venta)</div>
+            <div class="v" id="d-card-valor"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ======================================================
+   CONFIGURACIÓN: pegá acá la URL de tu Web App de Apps Script
+   (ver README.md — paso "Deploy")
+   ====================================================== */
+const API_URL = https://script.google.com/macros/s/AKfycbyOAdAf3Kwz_2qKdQ_XWS53nHu4xB42EnYvSkMxL6fOFvRzlBLNw2lrRP-Vv2p8nrERKw/exec
+
+let SESSION = null; // { usuario, rol } — se pierde al recargar, hay que loguearse de nuevo
+let STOCK_CACHE = [];
+
+/* ---------- helpers de red ---------- */
+async function apiGet(action){
+  const res = await fetch(`${API_URL}?action=${action}`);
+  return res.json();
+}
+async function apiPost(payload){
+  // text/plain evita el preflight OPTIONS, que Apps Script no maneja bien
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+function money(n){
+  return '$' + (Number(n)||0).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+/* ---------- login ---------- */
+async function login(){
+  const usuario = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if(!usuario || !password){
+    errEl.textContent = 'Completá usuario y contraseña.';
+    errEl.style.display = 'block';
+    return;
+  }
+  try{
+    const r = await apiPost({ action:'login', usuario, password });
+    if(!r.ok){
+      errEl.textContent = r.error || 'No se pudo iniciar sesión.';
+      errEl.style.display = 'block';
+      return;
+    }
+    SESSION = { usuario: r.usuario, rol: r.rol };
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('who-name').textContent = SESSION.usuario;
+    await refreshAll();
+  }catch(e){
+    errEl.textContent = 'Error de conexión. Revisá que API_URL esté configurada.';
+    errEl.style.display = 'block';
+  }
+}
+function logout(){
+  SESSION = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+}
+
+/* ---------- tabs ---------- */
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelector(`nav.tabs button[data-view="${name}"]`).classList.add('active');
+  if(name==='stock') loadStock();
+  if(name==='venta') loadVentaForm();
+  if(name==='historial') loadHistorial();
+  if(name==='dashboard') loadDashboard();
+}
+
+async function refreshAll(){
+  await loadStock();
+}
+
+/* ---------- STOCK ---------- */
+async function loadStock(){
+  const r = await apiGet('stock');
+  if(!r.ok) return;
+  STOCK_CACHE = r.data;
+  const body = document.getElementById('stock-body');
+  body.innerHTML = '';
+  STOCK_CACHE.forEach(p=>{
+    const margen = p.precioVenta - p.precioCosto;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${p.titulo}</td>
+      <td class="num mono">${money(p.precioCosto)}</td>
+      <td class="num mono">${money(p.precioVenta)}</td>
+      <td class="num mono">${money(margen)}</td>
+      <td class="num mono ${p.stock<=3?'low':''}">${p.stock}</td>
+      <td class="row-actions">
+        <button onclick='openForm(${JSON.stringify(p)})'>editar</button>
+        <button class="del" onclick="deleteProducto('${p.id}')">borrar</button>
+      </td>`;
+    body.appendChild(tr);
+  });
+}
+
+function openForm(p){
+  const card = document.getElementById('form-card');
+  card.classList.add('show');
+  card.dataset.editId = p ? p.id : '';
+  document.getElementById('f-titulo').value = p ? p.titulo : '';
+  document.getElementById('f-costo').value = p ? p.precioCosto : '';
+  document.getElementById('f-venta').value = p ? p.precioVenta : '';
+  document.getElementById('f-stock').value = p ? p.stock : '';
+}
+function closeForm(){
+  document.getElementById('form-card').classList.remove('show');
+}
+async function saveProducto(){
+  const card = document.getElementById('form-card');
+  const id = card.dataset.editId;
+  const payload = {
+    action: id ? 'editProducto' : 'addProducto',
+    id: id || undefined,
+    titulo: document.getElementById('f-titulo').value.trim(),
+    precioCosto: document.getElementById('f-costo').value,
+    precioVenta: document.getElementById('f-venta').value,
+    stock: document.getElementById('f-stock').value
+  };
+  if(!payload.titulo){ alert('Falta el título'); return; }
+  const r = await apiPost(payload);
+  if(!r.ok){ alert(r.error); return; }
+  closeForm();
+  loadStock();
+}
+async function deleteProducto(id){
+  if(!confirm('¿Borrar este título del stock?')) return;
+  const r = await apiPost({ action:'deleteProducto', id });
+  if(!r.ok){ alert(r.error); return; }
+  loadStock();
+}
+
+/* ---------- VENTA ---------- */
+async function loadVentaForm(){
+  if(STOCK_CACHE.length === 0) await loadStock();
+  const sel = document.getElementById('v-producto');
+  sel.innerHTML = STOCK_CACHE.map(p=>`<option value="${p.id}">${p.titulo} (stock: ${p.stock})</option>`).join('');
+  updateVentaPreview();
+}
+function updateVentaPreview(){
+  const id = document.getElementById('v-producto').value;
+  const p = STOCK_CACHE.find(x=>x.id===id);
+  const cant = Number(document.getElementById('v-cantidad').value) || 0;
+  const prev = document.getElementById('v-preview');
+  if(!p){ prev.style.display='none'; return; }
+  prev.style.display='block';
+  document.getElementById('vp-unit').textContent = money(p.precioVenta);
+  document.getElementById('vp-stock').textContent = p.stock;
+  document.getElementById('vp-total').textContent = money(p.precioVenta*cant);
+  document.getElementById('vp-ganancia').textContent = money((p.precioVenta-p.precioCosto)*cant);
+}
+async function registrarVenta(){
+  const id = document.getElementById('v-producto').value;
+  const cantidad = Number(document.getElementById('v-cantidad').value);
+  const msg = document.getElementById('venta-msg');
+  msg.className = ''; msg.style.display='none';
+  if(!id || !cantidad || cantidad<=0){
+    msg.className='err'; msg.textContent='Elegí un título y una cantidad válida.'; return;
+  }
+  const r = await apiPost({ action:'registrarVenta', id, cantidad, usuario: SESSION.usuario });
+  if(!r.ok){
+    msg.className='err'; msg.textContent = r.error;
+    return;
+  }
+  msg.className='ok';
+  msg.textContent = `Venta registrada — total ${money(r.totalVenta)}, ganancia ${money(r.ganancia)}. Stock restante: ${r.stockRestante}.`;
+  document.getElementById('v-cantidad').value = 1;
+  await loadStock();
+  await loadVentaForm();
+}
+
+/* ---------- HISTORIAL ---------- */
+async function loadHistorial(){
+  const r = await apiGet('ventas');
+  if(!r.ok) return;
+  const body = document.getElementById('ventas-body');
+  const empty = document.getElementById('ventas-empty');
+  body.innerHTML = '';
+  if(r.data.length === 0){ empty.style.display='block'; return; }
+  empty.style.display='none';
+  r.data.forEach(v=>{
+    const fecha = v.fecha ? new Date(v.fecha).toLocaleDateString('es-AR') : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${fecha}</td>
+      <td>${v.titulo}</td>
+      <td class="num mono">${v.cantidad}</td>
+      <td class="num mono">${money(v.total)}</td>
+      <td class="num mono" style="color:#24503D;">${money(v.ganancia)}</td>
+      <td>${v.usuario||''}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+/* ---------- DASHBOARD ---------- */
+async function loadDashboard(){
+  const r = await apiGet('dashboard');
+  if(!r.ok) return;
+  const d = r.data;
+  document.getElementById('d-fecha').textContent = new Date().toLocaleString('es-AR');
+  document.getElementById('d-titulos').textContent = d.cantidadTitulos;
+  document.getElementById('d-unidades').textContent = d.unidadesEnStock;
+  document.getElementById('d-costo').textContent = money(d.valorStockCosto);
+  document.getElementById('d-venta').textContent = money(d.valorStockVenta);
+  document.getElementById('d-potencial').textContent = money(d.gananciaPotencial);
+  document.getElementById('d-cantventas').textContent = d.cantidadVentas;
+  document.getElementById('d-unidvendidas').textContent = d.unidadesVendidas;
+  document.getElementById('d-facturado').textContent = money(d.totalVendido);
+  document.getElementById('d-generada').textContent = money(d.gananciaGenerada);
+  document.getElementById('d-total-ganancia').textContent = money(d.gananciaGenerada + d.gananciaPotencial);
+  document.getElementById('d-card-valor').textContent = money(d.valorStockVenta);
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
+</script>
+</body>
+</html>
