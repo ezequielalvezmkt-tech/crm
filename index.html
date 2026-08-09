@@ -740,6 +740,7 @@
           <div class="r-line"><span>Ventas realizadas</span><span id="d-cantventas"></span></div>
           <div class="r-line"><span>Unidades vendidas</span><span id="d-unidvendidas"></span></div>
           <div class="r-line"><span>Total facturado</span><span id="d-facturado"></span></div>
+          <div class="r-line"><span>Costo mercadería vendida</span><span id="d-costovendido"></span></div>
           <div class="r-line big green"><span>Ganancia generada</span><span id="d-generada"></span></div>
         </div>
 
@@ -754,6 +755,33 @@
           </div>
         </div>
       </div>
+
+      <div class="section-label">Ventas por usuario</div>
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th class="num">Pedidos</th>
+            <th class="num">Total vendido</th>
+            <th class="num">Ganancia generada</th>
+          </tr>
+        </thead>
+        <tbody id="dash-usuarios-body"></tbody>
+      </table>
+      <div id="dash-usuarios-empty" class="empty" style="display:none;">Todavía no hay ventas registradas.</div>
+
+      <div class="section-label">Clientes con mayor gasto</div>
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th class="num">Compras</th>
+            <th class="num">Total gastado</th>
+          </tr>
+        </thead>
+        <tbody id="dash-clientes-body"></tbody>
+      </table>
+      <div id="dash-clientes-empty" class="empty" style="display:none;">Todavía no hay compras de clientes registrados.</div>
     </section>
 
   </main>
@@ -1307,9 +1335,45 @@ async function loadDashboard(){
   document.getElementById('d-cantventas').textContent = d.cantidadVentas;
   document.getElementById('d-unidvendidas').textContent = d.unidadesVendidas;
   document.getElementById('d-facturado').textContent = money(d.totalVendido);
+  document.getElementById('d-costovendido').textContent = money(d.costoMercaderiaVendida);
   document.getElementById('d-generada').textContent = money(d.gananciaGenerada);
   document.getElementById('d-total-ganancia').textContent = money(d.gananciaGenerada + d.gananciaPotencial);
   document.getElementById('d-card-valor').textContent = money(d.valorStockVenta);
+
+  const uBody = document.getElementById('dash-usuarios-body');
+  const uEmpty = document.getElementById('dash-usuarios-empty');
+  uBody.innerHTML = '';
+  if(!d.ventasPorUsuario || d.ventasPorUsuario.length===0){
+    uEmpty.style.display='block';
+  } else {
+    uEmpty.style.display='none';
+    d.ventasPorUsuario.forEach(u=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${u.usuario}</td>
+        <td class="num mono">${u.cantidadVentas}</td>
+        <td class="num mono">${money(u.totalVendido)}</td>
+        <td class="num mono" style="color:#24503D;">${money(u.ganancia)}</td>`;
+      uBody.appendChild(tr);
+    });
+  }
+
+  const cBody = document.getElementById('dash-clientes-body');
+  const cEmpty = document.getElementById('dash-clientes-empty');
+  cBody.innerHTML = '';
+  if(!d.topClientes || d.topClientes.length===0){
+    cEmpty.style.display='block';
+  } else {
+    cEmpty.style.display='none';
+    d.topClientes.forEach(c=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.nombre}</td>
+        <td class="num mono">${c.compras}</td>
+        <td class="num mono">${money(c.totalGastado)}</td>`;
+      cBody.appendChild(tr);
+    });
+  }
 }
 
 document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
