@@ -652,6 +652,13 @@
 
         <button class="btn-primary" style="margin-top:16px;" onclick="registrarVenta()">Confirmar venta</button>
         <div id="venta-msg"></div>
+        <div id="v-recibo-actions" class="cliente-box" style="display:none; margin-top:14px;">
+          <div style="font-size:0.82rem; color:var(--ink-soft); margin-bottom:10px;">Pedido confirmado — enviaselo al cliente:</div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-secondary outline" type="button" onclick="copiarPedido()">Copiar detalle (WhatsApp)</button>
+            <button class="btn-secondary" type="button" onclick="descargarPedidoPDF()">Descargar / Imprimir PDF</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -981,7 +988,10 @@ function showView(name){
   document.getElementById('view-'+name).classList.add('active');
   document.querySelector(`nav.tabs button[data-view="${name}"]`).classList.add('active');
   if(name==='stock'){ loadStock(); loadCompras(); }
-  if(name==='venta') loadVentaForm();
+  if(name==='venta'){
+    document.getElementById('v-recibo-actions').style.display = 'none';
+    loadVentaForm();
+  }
   if(name==='clientes') loadClientes();
   if(name==='movimientos') loadMovimientos();
   if(name==='capital') loadCapital();
@@ -1350,6 +1360,15 @@ async function registrarVenta(){
   }
   msg.className='ok';
   msg.textContent = `Venta registrada — ${r.items} título(s), total ${money(r.totalVenta)}, ganancia ${money(r.ganancia)}.`;
+
+  ULTIMO_PEDIDO = {
+    cliente: clienteNombre || 'Consumidor final',
+    fecha: new Date(),
+    canal: CANAL,
+    items: CARRITO.map(x=>({ titulo:x.titulo, cantidad:x.cantidad, precioVenta:x.precioVenta, subtotal:x.precioVenta*x.cantidad })),
+    total: r.totalVenta
+  };
+
   CARRITO = [];
   document.getElementById('v-cliente-nombre').value = '';
   document.getElementById('v-cliente-telefono').value = '';
@@ -1357,6 +1376,83 @@ async function registrarVenta(){
   document.getElementById('v-cliente-localidad').value = '';
   await loadStock();
   await loadVentaForm();
+  document.getElementById('v-recibo-actions').style.display = 'block';
+}
+
+/* ---------- EXPORTAR PEDIDO (copiar / PDF) ---------- */
+let ULTIMO_PEDIDO = null;
+
+function textoPedido(p){
+  const lineas = [];
+  lineas.push('Pedido — Libros Para Emprendedor');
+  lineas.push('Cliente: ' + p.cliente);
+  lineas.push('Fecha: ' + fmtDate(p.fecha));
+  lineas.push('');
+  p.items.forEach(it=>{
+    lineas.push(`- ${it.titulo} x${it.cantidad} — ${money(it.subtotal)}`);
+  });
+  lineas.push('');
+  lineas.push('TOTAL: ' + money(p.total));
+  return lineas.join('\n');
+}
+
+async function copiarPedido(){
+  if(!ULTIMO_PEDIDO) return;
+  const texto = textoPedido(ULTIMO_PEDIDO);
+  try{
+    await navigator.clipboard.writeText(texto);
+    alert('Detalle del pedido copiado. Pegalo en WhatsApp o donde lo necesites.');
+  }catch(e){
+    prompt('No se pudo copiar automáticamente. Copiá el texto de acá:', texto);
+  }
+}
+
+function descargarPedidoPDF(){
+  if(!ULTIMO_PEDIDO) return;
+  const p = ULTIMO_PEDIDO;
+  const filas = p.items.map(it=>`
+    <tr>
+      <td>${it.titulo}</td>
+      <td style="text-align:right;">${it.cantidad}</td>
+      <td style="text-align:right;">${money(it.precioVenta)}</td>
+      <td style="text-align:right;">${money(it.subtotal)}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Pedido — ${p.cliente}</title>
+<style>
+  body{ font-family: Georgia, 'Times New Roman', serif; color:#2A241E; padding:40px; max-width:640px; margin:0 auto; }
+  h1{ font-size:1.35rem; margin:0 0 2px; }
+  .sub{ color:#6b6154; font-size:0.85rem; margin-bottom:26px; }
+  .meta{ margin-bottom:4px; font-size:0.92rem; }
+  table{ width:100%; border-collapse:collapse; margin-top:16px; }
+  th, td{ padding:9px 6px; border-bottom:1px solid #d8cfba; font-size:0.9rem; }
+  th{ text-align:left; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:#6b6154; }
+  tfoot td{ font-weight:700; border-top:2px solid #2A241E; border-bottom:none; font-size:1.05rem; padding-top:12px; }
+  @media print{ body{ padding:0; } }
+</style>
+</head>
+<body>
+  <h1>Libros Para Emprendedor</h1>
+  <div class="sub">Detalle de pedido — venta ${p.canal==='Minorista'?'minorista (web)':'mayorista'}</div>
+  <div class="meta"><strong>Cliente:</strong> ${p.cliente}</div>
+  <div class="meta"><strong>Fecha:</strong> ${fmtDate(p.fecha)}</div>
+  <table>
+    <thead><tr><th>Título</th><th style="text-align:right;">Cant.</th><th style="text-align:right;">Precio unit.</th><th style="text-align:right;">Subtotal</th></tr></thead>
+    <tbody>${filas}</tbody>
+    <tfoot><tr><td colspan="3">Total</td><td style="text-align:right;">${money(p.total)}</td></tr></tfoot>
+  </table>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  if(!w){ alert('El navegador bloqueó la ventana emergente. Habilitá pop-ups para este sitio e intentá de nuevo.'); return; }
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>{ w.focus(); w.print(); }, 300);
 }
 
 /* ---------- CLIENTES ---------- */
