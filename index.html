@@ -809,6 +809,7 @@
             <th>Canal</th>
             <th>Cliente</th>
             <th>Usuario</th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="ventas-body"></tbody>
@@ -1623,6 +1624,15 @@ async function loadCapital(){
 }
 
 /* ---------- HISTORIAL ---------- */
+async function anularVenta(idPedido){
+  if(!confirm('¿Anular este pedido? Se va a borrar del historial y el stock de todos sus títulos vuelve para atrás. Esta acción no se puede deshacer.')) return;
+  const r = await apiPost({ action:'anularVenta', idPedido });
+  if(!r.ok){ alert(r.error); return; }
+  await loadStock();
+  await loadHistorial();
+  alert('Pedido anulado y stock devuelto.');
+}
+
 let VENTAS_CACHE = [];
 
 async function loadHistorial(){
@@ -1661,6 +1671,7 @@ function renderHistorial(){
     empty.style.display = 'none';
     filtradas.forEach(v=>{
       const capital = v.precioCostoUnit * v.cantidad;
+      const idPedido = v.idPedido || v.id;
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${fmtDate(v.fecha)}</td>
@@ -1671,7 +1682,8 @@ function renderHistorial(){
         <td class="num mono" style="color:#24503D;">${money(v.ganancia)}</td>
         <td>${v.canal||'Mayorista'}</td>
         <td>${v.clienteNombre||'—'}</td>
-        <td>${v.usuario||''}</td>`;
+        <td>${v.usuario||''}</td>
+        <td class="row-actions"><button class="del" onclick="anularVenta('${idPedido}')">anular</button></td>`;
       body.appendChild(tr);
     });
   }
