@@ -514,7 +514,13 @@
       </div>
 
       <div class="form-card" id="compra-form">
-        <h3>Agregar mercadería (ingreso de stock)</h3>
+        <h3>Agregar mercadería (ingreso de stock por lote)</h3>
+
+        <div class="form-grid g2">
+          <div class="field"><label>Proveedor</label><input id="c-proveedor" placeholder="Nombre del proveedor"></div>
+          <div class="field"><label>Fecha</label><input id="c-fecha" type="date"></div>
+        </div>
+
         <div class="toggle-row">
           <input type="checkbox" id="c-nuevo-toggle" onchange="toggleCompraNuevo()">
           <label for="c-nuevo-toggle" style="margin:0;">Es un título nuevo (todavía no está en el stock)</label>
@@ -531,12 +537,22 @@
           </div>
         </div>
 
-        <div class="form-grid g5">
-          <div class="field"><label>Proveedor</label><input id="c-proveedor" placeholder="Nombre del proveedor"></div>
-          <div class="field"><label>Fecha</label><input id="c-fecha" type="date"></div>
-          <div class="field"><label>Cantidad</label><input id="c-cantidad" type="number" min="1" oninput="updateCompraTotal()"></div>
-          <div class="field"><label>Costo unitario</label><input id="c-costo" type="number" step="0.01" oninput="updateCompraTotal()"></div>
-          <div class="field"><label>Total</label><input id="c-total" type="text" readonly class="mono"></div>
+        <div class="add-row">
+          <div class="field qty"><label>Cantidad</label><input id="c-cantidad" type="number" min="1"></div>
+          <div class="field qty"><label>Costo unit.</label><input id="c-costo" type="number" step="0.01"></div>
+          <button type="button" onclick="agregarAlLote()">+ Agregar al lote</button>
+        </div>
+
+        <table class="cart">
+          <thead>
+            <tr><th>Título</th><th class="num">Cant.</th><th class="num">Costo u.</th><th class="num">Subtotal</th><th></th></tr>
+          </thead>
+          <tbody id="lote-body"></tbody>
+        </table>
+        <div id="lote-empty" class="cart-empty">Todavía no agregaste títulos al lote.</div>
+
+        <div class="venta-preview" id="lote-preview" style="display:none;">
+          <div class="line total"><span>Total del lote</span><span id="lp-total" class="mono"></span></div>
         </div>
 
         <div class="form-actions">
@@ -1038,7 +1054,9 @@ async function deleteProducto(id){
   loadStock();
 }
 
-/* ---------- AGREGAR MERCADERÍA (compras) ---------- */
+/* ---------- AGREGAR MERCADERÍA (lote multi-título) ---------- */
+let LOTE = []; // [{esNuevo, productoId, titulo, precioVenta, cantidad, precioCosto}]
+
 function openCompraForm(){
   const card = document.getElementById('compra-form');
   card.classList.add('show');
@@ -1052,8 +1070,9 @@ function openCompraForm(){
   document.getElementById('c-fecha').value = todayISO();
   document.getElementById('c-cantidad').value = '';
   document.getElementById('c-costo').value = '';
-  document.getElementById('c-total').value = '';
   document.getElementById('compra-msg').style.display = 'none';
+  LOTE = [];
+  renderLote();
 }
 function closeCompraForm(){
   document.getElementById('compra-form').classList.remove('show');
@@ -1063,41 +1082,101 @@ function toggleCompraNuevo(){
   document.getElementById('c-existente-wrap').style.display = esNuevo ? 'none' : 'block';
   document.getElementById('c-nuevo-wrap').style.display = esNuevo ? 'block' : 'none';
 }
-function updateCompraTotal(){
-  const cant = Number(document.getElementById('c-cantidad').value) || 0;
-  const costo = Number(document.getElementById('c-costo').value) || 0;
-  document.getElementById('c-total').value = money(cant*costo);
-}
-async function registrarCompra(){
+
+function agregarAlLote(){
   const esNuevo = document.getElementById('c-nuevo-toggle').checked;
+  const cantidad = Number(document.getElementById('c-cantidad').value) || 0;
+  const precioCosto = Number(document.getElementById('c-costo').value) || 0;
   const msg = document.getElementById('compra-msg');
   msg.className=''; msg.style.display='none';
+
+  if(cantidad<=0){ msg.className='err'; msg.textContent='Cantidad inválida.'; msg.style.display='block'; return; }
+
+  let item;
+  if(esNuevo){
+    const titulo = document.getElementById('c-titulo-nuevo').value.trim();
+    if(!titulo){ msg.className='err'; msg.textContent='Falta el título del producto nuevo.'; msg.style.display='block'; return; }
+    item = {
+      esNuevo: true,
+      titulo,
+      precioVenta: Number(document.getElementById('c-venta-nuevo').value) || 0,
+      cantidad, precioCosto
+    };
+    document.getElementById('c-titulo-nuevo').value = '';
+    document.getElementById('c-venta-nuevo').value = '';
+  } else {
+    const productoId = document.getElementById('c-producto').value;
+    if(!productoId){ msg.className='err'; msg.textContent='Elegí un título.'; msg.style.display='block'; return; }
+    const p = STOCK_CACHE.find(x=>x.id===productoId);
+    item = { esNuevo:false, productoId, titulo: p ? p.titulo : productoId, cantidad, precioCosto };
+  }
+
+  LOTE.push(item);
+  document.getElementById('c-cantidad').value = '';
+  document.getElementById('c-costo').value = '';
+  renderLote();
+}
+function quitarDelLote(idx){
+  LOTE.splice(idx,1);
+  renderLote();
+}
+function renderLote(){
+  const body = document.getElementById('lote-body');
+  const empty = document.getElementById('lote-empty');
+  const preview = document.getElementById('lote-preview');
+  body.innerHTML = '';
+  if(LOTE.length===0){
+    empty.style.display='block';
+    preview.style.display='none';
+    return;
+  }
+  empty.style.display='none';
+  preview.style.display='block';
+  let total=0;
+  LOTE.forEach((item,idx)=>{
+    const subtotal = item.cantidad*item.precioCosto;
+    total += subtotal;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.titulo}${item.esNuevo?' <span style="color:#9C4A32; font-size:0.72rem;">(nuevo)</span>':''}</td>
+      <td class="num mono">${item.cantidad}</td>
+      <td class="num mono">${money(item.precioCosto)}</td>
+      <td class="num mono">${money(subtotal)}</td>
+      <td><button class="rm" onclick="quitarDelLote(${idx})">quitar</button></td>`;
+    body.appendChild(tr);
+  });
+  document.getElementById('lp-total').textContent = money(total);
+}
+
+async function registrarCompra(){
+  const msg = document.getElementById('compra-msg');
+  msg.className=''; msg.style.display='none';
+  if(LOTE.length===0){
+    msg.className='err'; msg.textContent='Agregá al menos un título al lote.'; msg.style.display='block'; return;
+  }
+
+  const items = LOTE.map(x => x.esNuevo
+    ? { titulo:x.titulo, precioVenta:x.precioVenta, cantidad:x.cantidad, precioCosto:x.precioCosto }
+    : { productoId:x.productoId, cantidad:x.cantidad, precioCosto:x.precioCosto }
+  );
 
   const payload = {
     action:'registrarCompra',
     proveedor: document.getElementById('c-proveedor').value.trim(),
     fecha: document.getElementById('c-fecha').value,
-    cantidad: document.getElementById('c-cantidad').value,
-    precioCosto: document.getElementById('c-costo').value,
-    usuario: SESSION.usuario
+    usuario: SESSION.usuario,
+    items
   };
-  if(esNuevo){
-    payload.titulo = document.getElementById('c-titulo-nuevo').value.trim();
-    payload.precioVenta = document.getElementById('c-venta-nuevo').value;
-    if(!payload.titulo){ msg.className='err'; msg.textContent='Falta el título del producto nuevo.'; return; }
-  } else {
-    payload.productoId = document.getElementById('c-producto').value;
-    if(!payload.productoId){ msg.className='err'; msg.textContent='Elegí un título.'; return; }
-  }
-  if(!payload.cantidad || Number(payload.cantidad)<=0){ msg.className='err'; msg.textContent='Cantidad inválida.'; return; }
 
   const r = await apiPost(payload);
-  if(!r.ok){ msg.className='err'; msg.textContent=r.error; return; }
+  if(!r.ok){ msg.className='err'; msg.textContent=r.error; msg.style.display='block'; return; }
   msg.className='ok';
-  msg.textContent='Mercadería registrada y stock actualizado.';
+  msg.textContent = `Lote registrado — ${r.items} título(s), total ${money(r.total)}. Stock actualizado.`;
+  msg.style.display='block';
+  LOTE = [];
   await loadStock();
   await loadCompras();
-  setTimeout(closeCompraForm, 900);
+  setTimeout(closeCompraForm, 1100);
 }
 async function loadCompras(){
   const r = await apiGet('compras');
