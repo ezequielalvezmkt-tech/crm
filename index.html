@@ -873,6 +873,8 @@
             <th>Cliente</th>
             <th class="num">Compras</th>
             <th class="num">Total gastado</th>
+            <th class="num">Costo mercadería</th>
+            <th class="num">Ganancia</th>
           </tr>
         </thead>
         <tbody id="dash-clientes-body"></tbody>
@@ -1772,7 +1774,9 @@ async function loadDashboard(){
       tr.innerHTML = `
         <td>${c.nombre}</td>
         <td class="num mono">${c.compras}</td>
-        <td class="num mono">${money(c.totalGastado)}</td>`;
+        <td class="num mono">${money(c.totalGastado)}</td>
+        <td class="num mono">${money(c.costoMercaderia)}</td>
+        <td class="num mono" style="color:#24503D;">${money(c.ganancia)}</td>`;
       cBody.appendChild(tr);
     });
   }
