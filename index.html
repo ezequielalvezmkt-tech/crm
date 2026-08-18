@@ -1504,8 +1504,16 @@ async function loadClientes(){
       <td class="num mono">${c.compras}</td>
       <td class="num mono">${money(c.totalGastado)}</td>
       <td>${fmtDate(c.ultimaCompra)}</td>
-      <td class="row-actions"><button onclick="toggleSeguimiento('${c.id}')">seguimiento</button></td>`;
+      <td class="row-actions"><button onclick="toggleComprasCliente('${c.id}')">compras</button><button onclick="toggleSeguimiento('${c.id}')">seguimiento</button></td>`;
     body.appendChild(tr);
+
+    const comprasRow = document.createElement('tr');
+    comprasRow.className = 'seg-panel';
+    comprasRow.id = 'compras-'+c.id;
+    comprasRow.innerHTML = `<td colspan="6">
+      <div class="seg-list" id="compras-list-${c.id}"><div class="seg-empty">Cargando…</div></div>
+    </td>`;
+    body.appendChild(comprasRow);
 
     const segRow = document.createElement('tr');
     segRow.className = 'seg-panel';
@@ -1519,6 +1527,53 @@ async function loadClientes(){
     </td>`;
     body.appendChild(segRow);
   });
+}
+async function toggleComprasCliente(clienteId){
+  const row = document.getElementById('compras-'+clienteId);
+  const opening = !row.classList.contains('show');
+  document.querySelectorAll('.seg-panel').forEach(p=>p.classList.remove('show'));
+  if(opening){
+    row.classList.add('show');
+    await loadComprasCliente(clienteId);
+  }
+}
+async function loadComprasCliente(clienteId){
+  const list = document.getElementById('compras-list-'+clienteId);
+  const r = await apiGet('ventas');
+  if(!r.ok){ list.innerHTML = '<div class="seg-empty">No se pudo cargar.</div>'; return; }
+
+  const propias = r.data.filter(v => v.idCliente === clienteId);
+  if(propias.length === 0){ list.innerHTML = '<div class="seg-empty">Sin compras registradas todavía.</div>'; return; }
+
+  // agrupar las lineas de venta por pedido
+  const pedidos = {};
+  propias.forEach(v=>{
+    const pid = v.idPedido || v.id;
+    if(!pedidos[pid]) pedidos[pid] = { fecha: v.fecha, canal: v.canal, items: [], total: 0, costo: 0, ganancia: 0 };
+    const p = pedidos[pid];
+    p.items.push({ titulo: v.titulo, cantidad: v.cantidad });
+    p.total += v.total;
+    p.costo += v.precioCostoUnit * v.cantidad;
+    p.ganancia += v.ganancia;
+  });
+
+  const pedidosArr = Object.values(pedidos).sort((a,b)=> new Date(b.fecha) - new Date(a.fecha));
+
+  list.innerHTML = pedidosArr.map(p=>`
+    <div class="seg-item">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <strong>${fmtDate(p.fecha)}</strong>
+        <span class="mono" style="font-size:0.72rem; color:var(--ink-soft);">${p.canal||'Mayorista'}</span>
+      </div>
+      <div style="font-size:0.82rem; color:var(--ink-soft); margin-bottom:6px;">
+        ${p.items.map(it=>`${it.titulo} x${it.cantidad}`).join(', ')}
+      </div>
+      <div style="display:flex; gap:18px; font-size:0.85rem;">
+        <span>Total: <strong class="mono">${money(p.total)}</strong></span>
+        <span>Costo: <strong class="mono">${money(p.costo)}</strong></span>
+        <span style="color:#24503D;">Ganancia: <strong class="mono">${money(p.ganancia)}</strong></span>
+      </div>
+    </div>`).join('');
 }
 async function toggleSeguimiento(clienteId){
   const row = document.getElementById('seg-'+clienteId);
